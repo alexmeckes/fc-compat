@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { UrlInput, CrawlConfig } from './components/UrlInput';
 import { AnalysisResults } from './components/AnalysisResults';
 import './index.css';
@@ -8,7 +8,7 @@ function App() {
 
   const handleAnalyze = (url: string, config: CrawlConfig) => {
     // This will be called after the API request is complete
-    console.log('Analyzing with config:', config);
+    console.log('Analyzing URL:', url, 'with config:', config);
   };
 
   const handleResult = (result: any) => {

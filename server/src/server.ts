@@ -1,4 +1,4 @@
-import express, { Request, Response, Router } from 'express';
+import express, { Request, Response, Router, NextFunction } from 'express';
 import cors from 'cors';
 import axios, { AxiosResponse } from 'axios';
 import { URL } from 'url';
@@ -7,11 +7,52 @@ import * as cheerio from 'cheerio';
 
 const app = express();
 const router = Router();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
+// CORS configuration
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',');
+app.use(cors({
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      return callback(new Error('Not allowed by CORS'), false);
+    }
+    return callback(null, true);
+  }
+}));
+
 app.use(express.json());
+
+// Rate limiting
+const requestCounts = new Map<string, { count: number; resetTime: number }>();
+const MAX_REQUESTS = parseInt(process.env.MAX_REQUESTS_PER_MINUTE || '60', 10);
+const WINDOW_MS = 60 * 1000; // 1 minute
+
+function rateLimit(req: Request, res: Response, next: NextFunction) {
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  const requestData = requestCounts.get(ip) || { count: 0, resetTime: now + WINDOW_MS };
+
+  if (now > requestData.resetTime) {
+    requestData.count = 0;
+    requestData.resetTime = now + WINDOW_MS;
+  }
+
+  requestData.count++;
+  requestCounts.set(ip, requestData);
+
+  if (requestData.count > MAX_REQUESTS) {
+    return res.status(429).json({ error: 'Too many requests', errorType: 'RATE_LIMIT' });
+  }
+
+  next();
+}
+
+app.use(rateLimit);
+
+// Update axios default headers
+const userAgent = process.env.USER_AGENT || 'Mozilla/5.0 (compatible; CrawlabilityChecker/1.0)';
+axios.defaults.headers.common['User-Agent'] = userAgent;
 
 interface CrawlConfig {
   sitemapOnly: boolean;
@@ -324,7 +365,7 @@ async function fetchSitemap(url: string, config: CrawlConfig): Promise<string[]>
 }
 
 // URL check endpoint
-router.post('/api/check-url', async (req: Request, res: Response) => {
+router.post('/check-url', async (req: Request, res: Response) => {
   const { url, config = {
     sitemapOnly: false,
     ignoreSitemap: false,
@@ -541,7 +582,8 @@ router.post('/api/check-url', async (req: Request, res: Response) => {
   }
 });
 
-app.use(router);
+// Use the router
+app.use('/api', router);
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
