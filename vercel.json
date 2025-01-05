@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run server:build",
+  "buildCommand": "npm run server:build && npm run build",
   "builds": [
     {
       "src": "server/src/server.ts",
@@ -8,8 +8,11 @@
     },
     {
       "src": "package.json",
-      "use": "@vercel/vite",
-      "config": { "distDir": "dist" }
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist",
+        "zeroConfig": true
+      }
     }
   ],
   "routes": [
@@ -18,30 +21,11 @@
       "dest": "server/src/server.ts"
     },
     {
-      "src": "^/assets/.*\\.js$",
-      "headers": {
-        "Content-Type": "application/javascript; charset=utf-8"
-      },
-      "continue": true
+      "handle": "filesystem"
     },
     {
-      "src": ".*",
+      "src": "/(.*)",
       "dest": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cross-Origin-Opener-Policy",
-          "value": "same-origin"
-        },
-        {
-          "key": "Cross-Origin-Embedder-Policy",
-          "value": "require-corp"
-        }
-      ]
     }
   ]
 } 
