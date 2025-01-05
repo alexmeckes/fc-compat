@@ -13,5 +13,15 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
+  },
+  build: {
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+        }
+      }
+    }
   }
 }) 
