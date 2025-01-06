@@ -97,8 +97,8 @@ async function pollAdditionalResults(checkId: string, maxAttempts = 30): Promise
 
       const result: AdditionalChecks = await response.json();
       
-      // Only return if we have completed and have crawled URLs
-      if (result.completed && result.crawledUrls) {
+      // Return results if completed OR if we have SSL/robots.txt data
+      if (result.completed || (result.ssl || result.robotsTxt)) {
         return result;
       }
 

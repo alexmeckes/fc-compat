@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UrlList } from './UrlList';
 
 interface AnalysisResultsProps {
@@ -56,6 +56,37 @@ const StatusIndicator: React.FC<{ status: 'success' | 'warning' | 'error' }> = (
 export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
   const [isCrawling, setIsCrawling] = useState(false);
   const [crawlStarted, setCrawlStarted] = useState(false);
+  const [crawlId, setCrawlId] = useState<string | null>(null);
+  const [crawledUrls, setCrawledUrls] = useState<{
+    url: string;
+    status: number;
+    type: 'success' | 'redirect' | 'error';
+    timestamp: string;
+  }[] | null>(null);
+
+  // Poll for crawl results
+  useEffect(() => {
+    if (!crawlId) return;
+
+    const pollCrawlResults = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/check-results/${crawlId}`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (data.completed && data.crawledUrls) {
+          setCrawledUrls(data.crawledUrls);
+          setCrawlId(null); // Stop polling
+          setIsCrawling(false);
+        }
+      } catch (error) {
+        console.error('Error polling crawl results:', error);
+      }
+    };
+
+    const interval = setInterval(pollCrawlResults, 1000);
+    return () => clearInterval(interval);
+  }, [crawlId]);
 
   if (!result) return null;
 
@@ -91,11 +122,12 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
         throw new Error('Failed to start URL discovery');
       }
 
-      // The crawling has started, the results will be polled by the parent component
+      const data = await response.json();
+      setCrawlId(data.crawlId);
     } catch (error) {
       console.error('Error starting URL discovery:', error);
-    } finally {
       setIsCrawling(false);
+      setCrawlStarted(false);
     }
   };
 
@@ -323,7 +355,9 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
               </span>
             )}
           </div>
-          {result.crawledUrls && <UrlList urls={result.crawledUrls} />}
+          {(crawledUrls || result.crawledUrls) && (
+            <UrlList urls={crawledUrls || result.crawledUrls || []} />
+          )}
         </div>
       </div>
     </div>
