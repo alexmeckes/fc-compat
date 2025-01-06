@@ -59,7 +59,19 @@ export async function checkUrl(url: string, config: CrawlConfig) {
       }
 
       const { data } = scrapeResult;
-      const { metadata, ssl, robotsTxt } = data;
+      const { metadata } = data;
+
+      // Extract SSL and robots.txt data, handling potential undefined values
+      const ssl = data.ssl || {
+        valid: url.startsWith('https://'),
+        details: { protocol: 'https' }
+      };
+
+      const robotsTxt = data.robotsTxt || {
+        exists: false,
+        allowed: true,
+        userAgent: '*'
+      };
 
       // Determine error type based on metadata and warnings
       let errorType: string | undefined;
@@ -75,13 +87,15 @@ export async function checkUrl(url: string, config: CrawlConfig) {
         errorType = 'UNKNOWN';
       }
 
+      const isSecure = ssl?.valid ?? url.startsWith('https://');
+
       return {
         url,
         isValid: metadata.statusCode >= 200 && metadata.statusCode < 400,
         statusCode: metadata.statusCode,
         error: metadata.error,
         errorType,
-        isSecure: ssl?.valid ?? false,
+        isSecure,
         ssl,
         robotsTxt
       };
@@ -90,6 +104,22 @@ export async function checkUrl(url: string, config: CrawlConfig) {
     }
   } catch (error) {
     console.error('API Error:', error);
-    throw error;
+    // Return a structured error response instead of throwing
+    return {
+      url,
+      isValid: false,
+      error: error instanceof Error ? error.message : 'Failed to analyze URL',
+      errorType: 'UNKNOWN',
+      isSecure: false,
+      ssl: {
+        valid: false,
+        error: 'Failed to analyze SSL'
+      },
+      robotsTxt: {
+        exists: false,
+        allowed: true,
+        userAgent: '*'
+      }
+    };
   }
 } 
