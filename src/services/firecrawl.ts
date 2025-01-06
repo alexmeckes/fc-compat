@@ -129,7 +129,13 @@ export const firecrawlService = {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${API_KEY}`,
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          ...requestBody,
+          includeTags: ['meta', 'link', 'title'],
+          waitFor: 1000,
+          checkSsl: true,
+          checkRobotsTxt: true,
+        }),
       });
 
       console.log('Response status:', response.status);
