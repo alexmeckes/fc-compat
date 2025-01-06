@@ -9,6 +9,14 @@ const app = express();
 const router = Router();
 const port = process.env.PORT || 3000;
 
+// Firecrawl configuration
+const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY;
+const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v1';
+
+if (!FIRECRAWL_API_KEY) {
+  console.warn('Warning: FIRECRAWL_API_KEY not set');
+}
+
 // CORS configuration
 const allowedOrigins = [
   'http://localhost:5173',
@@ -647,13 +655,92 @@ const getCrawlResultsHandler: express.RequestHandler = async (req, res) => {
   });
 };
 
+// Use router
+app.use('/', router);
+
+// Firecrawl integration endpoints
+router.post('/api/firecrawl/analyze', async (req: Request, res: Response) => {
+  try {
+    if (!FIRECRAWL_API_KEY) {
+      throw new Error('Firecrawl API key not configured');
+    }
+
+    const { url } = req.body;
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+
+    const response = await axios.post(
+      `${FIRECRAWL_BASE_URL}/scrape`,
+      {
+        url,
+        formats: ['html', 'metadata'],
+        extract: {
+          schema: {
+            type: 'object',
+            properties: {
+              ssl: {
+                type: 'object',
+                properties: {
+                  valid: { type: 'boolean' },
+                  issuer: { type: 'string' },
+                  validFrom: { type: 'string' },
+                  validTo: { type: 'string' },
+                  daysUntilExpiry: { type: 'number' },
+                  error: { type: 'string' },
+                  details: {
+                    type: 'object',
+                    properties: {
+                      protocol: { type: 'string' },
+                      cipher: { type: 'string' },
+                      verificationError: { type: 'string' }
+                    }
+                  }
+                }
+              },
+              robotsTxt: {
+                type: 'object',
+                properties: {
+                  exists: { type: 'boolean' },
+                  allowed: { type: 'boolean' },
+                  content: { type: 'string' },
+                  userAgent: { type: 'string' },
+                  warnings: { type: 'array', items: { type: 'string' } }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error in /api/firecrawl/analyze:', error);
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
+        res.status(401).json({ error: 'Invalid or missing Firecrawl API key' });
+      } else {
+        res.status(error.response?.status || 500).json({
+          error: error.response?.data?.message || error.message
+        });
+      }
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+});
+
 router.post('/check-url', checkUrlHandler);
 router.get('/check-results/:checkId', getCheckResultsHandler);
 router.post('/crawl-urls', crawlUrlsHandler);
 router.get('/crawl-results/:crawlId', getCrawlResultsHandler);
-
-// Use the router
-app.use('/api', router);
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
