@@ -51,6 +51,8 @@ interface ScrapeParams {
   url: string;
   skipTlsVerification?: boolean;
   timeout?: number;
+  formats?: string[];
+  onlyMainContent?: boolean;
 }
 
 export const firecrawlService = {
@@ -114,6 +116,8 @@ export const firecrawlService = {
         url: url.startsWith('http') ? url : `https://${url}`,
         skipTlsVerification: false,
         timeout: 30000,
+        formats: ['ssl', 'robotsTxt'],
+        onlyMainContent: false,
       };
       
       console.log('Request body:', requestBody);
