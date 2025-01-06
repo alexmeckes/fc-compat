@@ -601,8 +601,11 @@ const crawlUrlsHandler: express.RequestHandler = async (req, res) => {
       return;
     }
 
+    // Add https:// if no protocol specified
+    const urlToCheck = url.startsWith('http') ? url : `https://${url}`;
+
     // Generate a unique ID for this crawl
-    const crawlId = Buffer.from(url + Date.now().toString()).toString('base64');
+    const crawlId = Buffer.from(urlToCheck + Date.now().toString()).toString('base64');
     
     // Initialize crawl results
     checkResults.set(crawlId, {
@@ -610,8 +613,22 @@ const crawlUrlsHandler: express.RequestHandler = async (req, res) => {
       timestamp: Date.now()
     });
 
+    // Start SSL and robots.txt checks immediately
+    const [sslResult, robotsTxtResult] = await Promise.allSettled([
+      checkSSL(new URL(urlToCheck).hostname),
+      checkRobotsTxt(urlToCheck)
+    ]);
+
+    // Store initial results
+    const result = checkResults.get(crawlId);
+    if (result) {
+      result.ssl = sslResult.status === 'fulfilled' ? sslResult.value : undefined;
+      result.robotsTxt = robotsTxtResult.status === 'fulfilled' ? robotsTxtResult.value : undefined;
+      checkResults.set(crawlId, result);
+    }
+
     // Start crawling in the background
-    crawlUrls(url, config).then(crawledUrls => {
+    crawlUrls(urlToCheck, config).then(crawledUrls => {
       const result = checkResults.get(crawlId);
       if (result) {
         result.crawledUrls = crawledUrls;
