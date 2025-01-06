@@ -73,27 +73,37 @@ export async function checkUrl(url: string, config: CrawlConfig) {
         userAgent: '*'
       };
 
+      // Determine if the URL is valid based on multiple factors
+      const isValid = (
+        metadata.statusCode >= 200 && 
+        metadata.statusCode < 400 &&
+        !metadata.error &&
+        !ssl.error
+      );
+
       // Determine error type based on metadata and warnings
       let errorType: string | undefined;
-      if (metadata.statusCode === 429) {
-        errorType = 'RATE_LIMIT';
-      } else if (metadata.statusCode === 403) {
-        errorType = 'BOT_PROTECTION';
-      } else if (metadata.statusCode === 401) {
-        errorType = 'ACCESS_DENIED';
-      } else if (ssl?.error) {
-        errorType = 'SSL';
-      } else if (metadata.error) {
-        errorType = 'UNKNOWN';
+      if (!isValid) {
+        if (metadata.statusCode === 429) {
+          errorType = 'RATE_LIMIT';
+        } else if (metadata.statusCode === 403) {
+          errorType = 'BOT_PROTECTION';
+        } else if (metadata.statusCode === 401) {
+          errorType = 'ACCESS_DENIED';
+        } else if (ssl?.error) {
+          errorType = 'SSL';
+        } else if (metadata.error) {
+          errorType = 'UNKNOWN';
+        }
       }
 
       const isSecure = ssl?.valid ?? url.startsWith('https://');
 
       return {
         url,
-        isValid: metadata.statusCode >= 200 && metadata.statusCode < 400,
-        statusCode: metadata.statusCode,
-        error: metadata.error,
+        isValid,
+        statusCode: metadata.statusCode || 200,
+        error: metadata.error || ssl.error,
         errorType,
         isSecure,
         ssl,
