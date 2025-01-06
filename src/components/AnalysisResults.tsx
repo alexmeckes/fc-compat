@@ -81,7 +81,8 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result: initia
 
     const pollCrawlResults = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/crawl-results/${crawlId}`);
+        const encodedCrawlId = encodeURIComponent(crawlId);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/crawl-results/${encodedCrawlId}`);
         if (!response.ok) {
           console.error('Error polling crawl results:', response.status);
           return;
@@ -106,7 +107,6 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result: initia
 
         // Stop polling if completed
         if (data.completed) {
-          setCrawlId(null);
           setIsCrawling(false);
         }
       } catch (error) {

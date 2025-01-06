@@ -404,11 +404,10 @@ const checkResults = new Map<string, {
 
 // Store crawl results separately
 const crawlResults = new Map<string, {
-  ssl?: UrlCheckResult['ssl'];
-  robotsTxt?: UrlCheckResult['robotsTxt'];
   crawledUrls?: UrlCheckResult['crawledUrls'];
   completed: boolean;
   timestamp: number;
+  error?: string;
 }>();
 
 // Clean up old results periodically
@@ -467,71 +466,43 @@ const checkUrlHandler: express.RequestHandler = async (req, res) => {
     console.log('Starting initial URL check...');
     let response: AxiosResponse;
     try {
-      response = await axios.get(urlToCheck, {
-        timeout: 15000, // 15 seconds timeout
-        maxRedirects: 5,
-        validateStatus: null,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; CrawlabilityChecker/1.0)'
-        }
-      });
-      console.log('Initial URL check response:', { 
-        status: response.status, 
-        statusText: response.statusText,
-        contentType: response.headers['content-type']
-      });
+      // Run all initial checks in parallel
+      const [urlResponse, sslResult, robotsTxtResult] = await Promise.all([
+        axios.get(urlToCheck, {
+          timeout: 15000,
+          maxRedirects: 5,
+          validateStatus: null,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; CrawlabilityChecker/1.0)'
+          }
+        }),
+        checkSSL(new URL(urlToCheck).hostname),
+        checkRobotsTxt(urlToCheck)
+      ]);
 
-      // Start crawling in the background
-      const crawlPromise = crawlUrls(urlToCheck, config).then(crawledUrls => {
-        const result = checkResults.get(checkId);
-        if (result) {
-          result.crawledUrls = crawledUrls;
-          checkResults.set(checkId, result);
-        }
-      }).catch(error => {
-        console.error('Error during crawling:', error);
-      });
+      response = urlResponse;
+      console.log('Initial checks completed');
 
-      // Send initial response
+      // Store the results
+      const result = checkResults.get(checkId);
+      if (result) {
+        result.ssl = sslResult;
+        result.robotsTxt = robotsTxtResult;
+        result.completed = true;
+        checkResults.set(checkId, result);
+      }
+
+      // Send complete response
       res.json({
         checkId,
         url: urlToCheck,
         isValid: response.status >= 200 && response.status < 400,
         statusCode: response.status,
         isSecure: urlToCheck.startsWith('https://'),
-        message: 'Initial check complete. Additional checks in progress.'
+        ssl: sslResult,
+        robotsTxt: robotsTxtResult,
+        message: 'Initial check complete'
       });
-
-      // Perform additional checks asynchronously
-      try {
-        const [sslResult, robotsTxtResult] = await Promise.allSettled([
-          checkSSL(new URL(urlToCheck).hostname),
-          checkRobotsTxt(urlToCheck)
-        ]);
-
-        // Store the results
-        const result = checkResults.get(checkId);
-        if (result) {
-          result.ssl = sslResult.status === 'fulfilled' ? sslResult.value : undefined;
-          result.robotsTxt = robotsTxtResult.status === 'fulfilled' ? robotsTxtResult.value : undefined;
-          result.completed = true;
-          checkResults.set(checkId, result);
-        }
-
-        // Log results of additional checks
-        console.log('Additional checks completed:', {
-          ssl: sslResult.status === 'fulfilled' ? sslResult.value : null,
-          robotsTxt: robotsTxtResult.status === 'fulfilled' ? robotsTxtResult.value : null
-        });
-
-      } catch (error) {
-        console.error('Error during additional checks:', error);
-        const result = checkResults.get(checkId);
-        if (result) {
-          result.completed = true;
-          checkResults.set(checkId, result);
-        }
-      }
 
     } catch (error) {
       console.error('Error during initial URL check:', error);
@@ -615,28 +586,14 @@ const crawlUrlsHandler: express.RequestHandler = async (req, res) => {
     // Add https:// if no protocol specified
     const urlToCheck = url.startsWith('http') ? url : `https://${url}`;
 
-    // Generate a unique ID for this crawl
-    const crawlId = Buffer.from(urlToCheck + Date.now().toString()).toString('base64');
+    // Generate a unique ID for this crawl using a URL-safe encoding
+    const crawlId = Buffer.from(`${urlToCheck}-${Date.now()}`).toString('base64url');
     
     // Initialize crawl results
     crawlResults.set(crawlId, {
       completed: false,
       timestamp: Date.now()
     });
-
-    // Start SSL and robots.txt checks immediately
-    const [sslResult, robotsTxtResult] = await Promise.allSettled([
-      checkSSL(new URL(urlToCheck).hostname),
-      checkRobotsTxt(urlToCheck)
-    ]);
-
-    // Store initial results
-    const result = crawlResults.get(crawlId);
-    if (result) {
-      result.ssl = sslResult.status === 'fulfilled' ? sslResult.value : undefined;
-      result.robotsTxt = robotsTxtResult.status === 'fulfilled' ? robotsTxtResult.value : undefined;
-      crawlResults.set(crawlId, result);
-    }
 
     // Start crawling in the background
     crawlUrls(urlToCheck, config).then(crawledUrls => {
@@ -651,6 +608,7 @@ const crawlUrlsHandler: express.RequestHandler = async (req, res) => {
       const result = crawlResults.get(crawlId);
       if (result) {
         result.completed = true;
+        result.error = error.message;
         crawlResults.set(crawlId, result);
       }
     });
@@ -684,9 +642,8 @@ const getCrawlResultsHandler: express.RequestHandler = async (req, res) => {
 
   res.json({
     completed: result.completed,
-    ssl: result.ssl,
-    robotsTxt: result.robotsTxt,
-    crawledUrls: result.crawledUrls
+    crawledUrls: result.crawledUrls,
+    error: result.error
   });
 };
 
