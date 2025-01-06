@@ -1,6 +1,6 @@
 import express, { Request, Response, Router, NextFunction } from 'express';
 import cors from 'cors';
-import axios, { AxiosResponse } from 'axios';
+import axios, { AxiosResponse, AxiosError } from 'axios';
 import { URL } from 'url';
 import { connect } from 'tls';
 import * as cheerio from 'cheerio';
@@ -48,7 +48,8 @@ const requestCounts = new Map<string, { count: number; resetTime: number }>();
 const MAX_REQUESTS = parseInt(process.env.MAX_REQUESTS_PER_MINUTE || '60', 10);
 const WINDOW_MS = 60 * 1000; // 1 minute
 
-function rateLimit(req: Request, res: Response, next: NextFunction) {
+// Rate limiting middleware
+const rateLimit: express.RequestHandler = (req, res, next) => {
   const ip = req.ip || req.socket.remoteAddress || 'unknown';
   const now = Date.now();
   const requestData = requestCounts.get(ip) || { count: 0, resetTime: now + WINDOW_MS };
@@ -62,11 +63,12 @@ function rateLimit(req: Request, res: Response, next: NextFunction) {
   requestCounts.set(ip, requestData);
 
   if (requestData.count > MAX_REQUESTS) {
-    return res.status(429).json({ error: 'Too many requests', errorType: 'RATE_LIMIT' });
+    res.status(429).json({ error: 'Too many requests', errorType: 'RATE_LIMIT' });
+    return;
   }
 
   next();
-}
+};
 
 app.use(rateLimit);
 
@@ -385,7 +387,10 @@ async function fetchSitemap(url: string, config: CrawlConfig): Promise<string[]>
 }
 
 // URL check endpoint
-router.post('/check-url', async (req: Request, res: Response) => {
+const checkUrlHandler = async (req: Request, res: Response) => {
+  // Set a longer timeout for the response
+  res.setTimeout(30000); // 30 seconds timeout
+
   const { url, config = {
     sitemapOnly: false,
     ignoreSitemap: false,
@@ -411,19 +416,36 @@ router.post('/check-url', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid URL format' });
     }
 
-    // Initial URL check
-    const response = await axios.get(urlToCheck, {
-      timeout: 10000,
-      maxRedirects: 5,
-      validateStatus: null,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; CrawlabilityChecker/1.0)'
+    // Initial URL check with increased timeout
+    let response: AxiosResponse;
+    try {
+      response = await axios.get(urlToCheck, {
+        timeout: 15000, // 15 seconds timeout
+        maxRedirects: 5,
+        validateStatus: null,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; CrawlabilityChecker/1.0)'
+        }
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        return res.json({
+          url: urlToCheck,
+          isValid: false,
+          statusCode: 504,
+          error: 'Request timed out',
+          errorType: 'NETWORK',
+          isSecure: urlToCheck.startsWith('https://'),
+          crawledUrls
+        });
       }
-    });
+      throw error;
+    }
 
     // Track redirects if any
     const redirectChain: string[] = [];
     let currentUrl = urlToCheck;
+    
     if (response.request?.res?.responseUrl && response.request.res.responseUrl !== urlToCheck) {
       redirectChain.push(urlToCheck);
       redirectChain.push(response.request.res.responseUrl);
@@ -600,7 +622,9 @@ router.post('/check-url', async (req: Request, res: Response) => {
       crawledUrls
     });
   }
-});
+};
+
+router.post('/check-url', checkUrlHandler);
 
 // Use the router
 app.use('/api', router);
