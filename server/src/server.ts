@@ -397,6 +397,7 @@ async function fetchSitemap(url: string, config: CrawlConfig): Promise<string[]>
 const checkResults = new Map<string, {
   ssl?: UrlCheckResult['ssl'];
   robotsTxt?: UrlCheckResult['robotsTxt'];
+  crawledUrls?: UrlCheckResult['crawledUrls'];
   completed: boolean;
   timestamp: number;
 }>();
@@ -467,6 +468,17 @@ const checkUrlHandler: express.RequestHandler = async (req, res) => {
         status: response.status, 
         statusText: response.statusText,
         contentType: response.headers['content-type']
+      });
+
+      // Start crawling in the background
+      const crawlPromise = crawlUrls(urlToCheck, config).then(crawledUrls => {
+        const result = checkResults.get(checkId);
+        if (result) {
+          result.crawledUrls = crawledUrls;
+          checkResults.set(checkId, result);
+        }
+      }).catch(error => {
+        console.error('Error during crawling:', error);
       });
 
       // Send initial response
@@ -579,3 +591,130 @@ app.use('/api', router);
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 }); 
+
+// Helper function to crawl URLs
+async function crawlUrls(baseUrl: string, config: CrawlConfig): Promise<{
+  url: string;
+  status: number;
+  type: 'success' | 'redirect' | 'error';
+  timestamp: string;
+}[]> {
+  const crawledUrls = new Set<string>();
+  const results: {
+    url: string;
+    status: number;
+    type: 'success' | 'redirect' | 'error';
+    timestamp: string;
+  }[] = [];
+  const urlsToVisit = new Set<string>([baseUrl]);
+  let depth = 0;
+
+  // First, try to get URLs from sitemap if not ignored
+  if (!config.ignoreSitemap) {
+    try {
+      const sitemapUrls = await fetchSitemap(baseUrl, config);
+      sitemapUrls.forEach(url => urlsToVisit.add(url));
+      
+      // If sitemapOnly is true, we'll only use sitemap URLs
+      if (config.sitemapOnly) {
+        for (const url of urlsToVisit) {
+          if (results.length >= config.limit) break;
+          
+          try {
+            const response = await axios.get(url, {
+              timeout: 10000,
+              maxRedirects: 5,
+              validateStatus: null,
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (compatible; CrawlabilityChecker/1.0)'
+              }
+            });
+
+            results.push({
+              url,
+              status: response.status,
+              type: response.status >= 200 && response.status < 300 
+                ? 'success' 
+                : response.status >= 300 && response.status < 400
+                ? 'redirect'
+                : 'error',
+              timestamp: new Date().toISOString()
+            });
+            
+            crawledUrls.add(url);
+          } catch (error) {
+            results.push({
+              url,
+              status: 0,
+              type: 'error',
+              timestamp: new Date().toISOString()
+            });
+            crawledUrls.add(url);
+          }
+        }
+        return results;
+      }
+    } catch (error) {
+      console.error('Error fetching sitemap:', error);
+    }
+  }
+
+  // Crawl URLs up to the specified depth
+  while (depth < config.maxDepth && urlsToVisit.size > 0 && results.length < config.limit) {
+    const currentUrls = Array.from(urlsToVisit);
+    urlsToVisit.clear();
+
+    for (const url of currentUrls) {
+      if (crawledUrls.has(url) || results.length >= config.limit) continue;
+
+      try {
+        const response = await axios.get(url, {
+          timeout: 10000,
+          maxRedirects: 5,
+          validateStatus: null,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; CrawlabilityChecker/1.0)'
+          }
+        });
+
+        results.push({
+          url,
+          status: response.status,
+          type: response.status >= 200 && response.status < 300 
+            ? 'success' 
+            : response.status >= 300 && response.status < 400
+            ? 'redirect'
+            : 'error',
+          timestamp: new Date().toISOString()
+        });
+
+        crawledUrls.add(url);
+
+        // Only discover new links if this was a successful HTML response
+        if (
+          response.status === 200 && 
+          response.headers['content-type']?.includes('text/html')
+        ) {
+          const newLinks = discoverLinks(response.data, url, config);
+          newLinks.forEach(link => {
+            if (!crawledUrls.has(link)) {
+              urlsToVisit.add(link);
+            }
+          });
+        }
+      } catch (error) {
+        results.push({
+          url,
+          status: 0,
+          type: 'error',
+          timestamp: new Date().toISOString()
+        });
+        crawledUrls.add(url);
+      }
+    }
+
+    depth++;
+  }
+
+  return results;
+} 
