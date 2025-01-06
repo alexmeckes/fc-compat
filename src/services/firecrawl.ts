@@ -1,7 +1,7 @@
-import { CrawlConfig } from '../components/UrlInput';
+import axios from 'axios';
+import { CrawlConfig } from '../types';
 
-// Get API key from environment variable or fallback to hardcoded value for development
-const API_KEY = process.env.FIRECRAWL_API_KEY || 'fc-8931d65d88d84608abe543181f57d7e4';
+const API_KEY = process.env.NEXT_PUBLIC_FIRECRAWL_API_KEY || 'test_fc_key';
 const BASE_URL = 'https://api.firecrawl.dev/v1';
 
 interface MapResponse {
@@ -15,15 +15,10 @@ interface MapParams extends CrawlConfig {
 
 interface ScrapeResponse {
   success: boolean;
+  error?: string;
   data: {
-    html?: string;
     metadata: {
-      title: string;
-      description?: string;
-      language?: string;
-      sourceURL: string;
       statusCode: number;
-      error?: string;
     };
     ssl?: {
       valid: boolean;
@@ -45,7 +40,6 @@ interface ScrapeResponse {
       userAgent: string;
       warnings?: string[];
     };
-    warning?: string;
   };
 }
 
@@ -55,6 +49,43 @@ interface ScrapeParams {
   timeout?: number;
   formats?: string[];
   onlyMainContent?: boolean;
+  waitFor?: number;
+  extract?: {
+    schema?: {
+      type: string;
+      properties: {
+        ssl?: {
+          type: string;
+          properties: {
+            valid: { type: string };
+            issuer: { type: string };
+            validFrom: { type: string };
+            validTo: { type: string };
+            daysUntilExpiry: { type: string };
+            error: { type: string };
+            details: {
+              type: string;
+              properties: {
+                protocol: { type: string };
+                cipher: { type: string };
+                verificationError: { type: string };
+              };
+            };
+          };
+        };
+        robotsTxt?: {
+          type: string;
+          properties: {
+            exists: { type: string };
+            allowed: { type: string };
+            content: { type: string };
+            userAgent: { type: string };
+            warnings: { type: string; items: { type: string } };
+          };
+        };
+      };
+    };
+  };
 }
 
 interface FirecrawlError {
@@ -63,137 +94,117 @@ interface FirecrawlError {
   details?: any;
 }
 
-export const firecrawlService = {
+export class FirecrawlService {
+  private apiKey: string;
+
+  constructor() {
+    this.apiKey = API_KEY;
+  }
+
   async analyzeUrl(url: string, config: CrawlConfig): Promise<MapResponse> {
     try {
       console.log('Making map request to Firecrawl with URL:', url);
-      console.log('Configuration:', config);
       
-      const requestBody: MapParams = {
+      const requestBody = {
         url: url.startsWith('http') ? url : `https://${url}`,
-        ...config
+        maxDepth: config.maxDepth || 2,
+        maxUrls: config.maxUrls || 100,
+        skipTlsVerification: false
       };
-      
-      console.log('Request body:', requestBody);
 
       const response = await fetch(`${BASE_URL}/map`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`,
+          'Authorization': `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify(requestBody),
       });
 
-      console.log('Response status:', response.status);
-      
       if (!response.ok) {
-        const errorData: FirecrawlError = await response.json().catch(() => ({ message: 'Unknown error' }));
-        console.error('Error data:', errorData);
-        throw new Error(
-          errorData.message || 
-          `Firecrawl API error (${response.status}): ${response.statusText}`
-        );
+        throw new Error(`Firecrawl API error: ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('Response data:', data);
-      
-      if (!data.links || !Array.isArray(data.links)) {
-        throw new Error('Invalid response format: missing links array');
-      }
-
-      return {
-        success: true,
-        links: data.links
-      };
+      return data;
     } catch (error) {
       console.error('Error in analyzeUrl:', error);
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Failed to connect to Firecrawl API');
+      throw error;
     }
-  },
+  }
 
   async scrapeUrl(url: string): Promise<ScrapeResponse> {
     try {
       console.log('Making scrape request to Firecrawl with URL:', url);
       
-      const requestBody = {
+      const requestBody: ScrapeParams = {
         url: url.startsWith('http') ? url : `https://${url}`,
         formats: ['html', 'metadata'],
         onlyMainContent: false,
         timeout: 30000,
         skipTlsVerification: false,
         waitFor: 1000,
+        extract: {
+          schema: {
+            type: 'object',
+            properties: {
+              ssl: {
+                type: 'object',
+                properties: {
+                  valid: { type: 'boolean' },
+                  issuer: { type: 'string' },
+                  validFrom: { type: 'string' },
+                  validTo: { type: 'string' },
+                  daysUntilExpiry: { type: 'number' },
+                  error: { type: 'string' },
+                  details: {
+                    type: 'object',
+                    properties: {
+                      protocol: { type: 'string' },
+                      cipher: { type: 'string' },
+                      verificationError: { type: 'string' }
+                    }
+                  }
+                }
+              },
+              robotsTxt: {
+                type: 'object',
+                properties: {
+                  exists: { type: 'boolean' },
+                  allowed: { type: 'boolean' },
+                  content: { type: 'string' },
+                  userAgent: { type: 'string' },
+                  warnings: { type: 'array', items: { type: 'string' } }
+                }
+              }
+            }
+          }
+        }
       };
       
       console.log('Request body:', requestBody);
 
-      const response = await fetch(`${BASE_URL}/scrape`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorData: FirecrawlError = await response.json().catch(() => ({ message: 'Unknown error' }));
-        console.error('Error data:', errorData);
-        
-        // More specific error handling
-        if (response.status === 400) {
-          throw new Error(`Invalid request: ${errorData.message}`);
-        } else if (response.status === 401) {
-          throw new Error('Invalid API key');
-        } else if (response.status === 429) {
-          throw new Error('Rate limit exceeded');
-        } else {
-          throw new Error(
-            errorData.message || 
-            `Firecrawl API error (${response.status}): ${response.statusText}`
-          );
+      const response = await axios.post<ScrapeResponse>(
+        `${BASE_URL}/scrape`,
+        requestBody,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`
+          }
         }
+      );
+
+      console.log('Firecrawl response:', response.data);
+      
+      if (response.data.error) {
+        throw new Error(response.data.error);
       }
 
-      const data = await response.json();
-      console.log('Raw Firecrawl response:', JSON.stringify(data, null, 2));
-
-      // Transform response if needed to match our interface
-      const transformedData: ScrapeResponse = {
-        success: true,
-        data: {
-          ...data.data,
-          metadata: {
-            ...data.data.metadata,
-            statusCode: data.data.metadata.statusCode || 200, // Default to 200 if not provided
-          },
-          // Move SSL and robots.txt data to the correct location if they're at the top level
-          ssl: data.data.ssl || data.ssl || {
-            valid: url.startsWith('https://'),
-            details: { protocol: 'https' }
-          },
-          robotsTxt: data.data.robotsTxt || data.robotsTxt || {
-            exists: false,
-            allowed: true,
-            userAgent: '*'
-          },
-        }
-      };
-
-      console.log('Transformed response:', JSON.stringify(transformedData, null, 2));
-      return transformedData;
+      return response.data;
     } catch (error) {
       console.error('Error in scrapeUrl:', error);
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Failed to connect to Firecrawl API');
+      throw error;
     }
   }
-}; 
+} 
