@@ -1,7 +1,8 @@
 import { CrawlConfig } from '../components/UrlInput';
 
-const API_KEY = 'fc-8931d65d88d84608abe543181f57d7e4';
-const BASE_URL = 'https://api.firecrawl.dev/v1';
+// Get API key from environment variable or fallback to hardcoded value for development
+const API_KEY = process.env.FIRECRAWL_API_KEY || 'fc-8931d65d88d84608abe543181f57d7e4';
+const BASE_URL = 'https://api.firecrawl.dev/v0';
 
 interface MapResponse {
   success: boolean;
@@ -23,26 +24,26 @@ interface ScrapeResponse {
       sourceURL: string;
       statusCode: number;
       error?: string;
-      ssl?: {
-        valid: boolean;
-        issuer?: string;
-        validFrom?: string;
-        validTo?: string;
-        daysUntilExpiry?: number;
-        error?: string;
-        details?: {
-          protocol?: string;
-          cipher?: string;
-          verificationError?: string;
-        };
+    };
+    ssl?: {
+      valid: boolean;
+      issuer?: string;
+      validFrom?: string;
+      validTo?: string;
+      daysUntilExpiry?: number;
+      error?: string;
+      details?: {
+        protocol?: string;
+        cipher?: string;
+        verificationError?: string;
       };
-      robotsTxt?: {
-        exists: boolean;
-        allowed: boolean;
-        content?: string;
-        userAgent: string;
-        warnings?: string[];
-      };
+    };
+    robotsTxt?: {
+      exists: boolean;
+      allowed: boolean;
+      content?: string;
+      userAgent: string;
+      warnings?: string[];
     };
     warning?: string;
   };
@@ -54,6 +55,12 @@ interface ScrapeParams {
   timeout?: number;
   formats?: string[];
   onlyMainContent?: boolean;
+}
+
+interface FirecrawlError {
+  message: string;
+  code?: string;
+  details?: any;
 }
 
 export const firecrawlService = {
@@ -81,10 +88,10 @@ export const firecrawlService = {
       console.log('Response status:', response.status);
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
+        const errorData: FirecrawlError = await response.json().catch(() => ({ message: 'Unknown error' }));
         console.error('Error data:', errorData);
         throw new Error(
-          errorData?.message || 
+          errorData.message || 
           `Firecrawl API error (${response.status}): ${response.statusText}`
         );
       }
@@ -113,12 +120,13 @@ export const firecrawlService = {
     try {
       console.log('Making scrape request to Firecrawl with URL:', url);
       
-      const requestBody: ScrapeParams = {
+      const requestBody = {
         url: url.startsWith('http') ? url : `https://${url}`,
-        skipTlsVerification: false,
-        timeout: 30000,
-        formats: ['html'],
+        formats: ['html', 'metadata'],
         onlyMainContent: false,
+        timeout: 30000,
+        skipTlsVerification: false,
+        waitFor: 1000,
       };
       
       console.log('Request body:', requestBody);
@@ -129,30 +137,45 @@ export const firecrawlService = {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${API_KEY}`,
         },
-        body: JSON.stringify({
-          ...requestBody,
-          includeTags: ['meta', 'link', 'title'],
-          waitFor: 1000,
-          checkSsl: true,
-          checkRobotsTxt: true,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       console.log('Response status:', response.status);
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
+        const errorData: FirecrawlError = await response.json().catch(() => ({ message: 'Unknown error' }));
         console.error('Error data:', errorData);
-        throw new Error(
-          errorData?.message || 
-          `Firecrawl API error (${response.status}): ${response.statusText}`
-        );
+        
+        // More specific error handling
+        if (response.status === 400) {
+          throw new Error(`Invalid request: ${errorData.message}`);
+        } else if (response.status === 401) {
+          throw new Error('Invalid API key');
+        } else if (response.status === 429) {
+          throw new Error('Rate limit exceeded');
+        } else {
+          throw new Error(
+            errorData.message || 
+            `Firecrawl API error (${response.status}): ${response.statusText}`
+          );
+        }
       }
 
       const data = await response.json();
       console.log('Response data:', data);
 
-      return data;
+      // Transform response if needed to match our interface
+      const transformedData: ScrapeResponse = {
+        success: true,
+        data: {
+          ...data.data,
+          // Move SSL and robots.txt data to the correct location if they're at the top level
+          ssl: data.data.ssl || data.ssl,
+          robotsTxt: data.data.robotsTxt || data.robotsTxt,
+        }
+      };
+
+      return transformedData;
     } catch (error) {
       console.error('Error in scrapeUrl:', error);
       if (error instanceof Error) {
