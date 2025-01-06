@@ -583,8 +583,65 @@ const getCheckResultsHandler: express.RequestHandler = async (req, res) => {
   });
 };
 
+// URL crawling endpoint
+const crawlUrlsHandler: express.RequestHandler = async (req, res) => {
+  console.log('Received crawl request for URL:', req.body.url);
+  
+  const { url, config = {
+    sitemapOnly: false,
+    ignoreSitemap: false,
+    includeSubdomains: false,
+    maxDepth: 2,
+    limit: 100,
+  } } = req.body;
+
+  try {
+    if (!url) {
+      res.status(400).json({ error: 'URL is required' });
+      return;
+    }
+
+    // Generate a unique ID for this crawl
+    const crawlId = Buffer.from(url + Date.now().toString()).toString('base64');
+    
+    // Initialize crawl results
+    checkResults.set(crawlId, {
+      completed: false,
+      timestamp: Date.now()
+    });
+
+    // Start crawling in the background
+    crawlUrls(url, config).then(crawledUrls => {
+      const result = checkResults.get(crawlId);
+      if (result) {
+        result.crawledUrls = crawledUrls;
+        result.completed = true;
+        checkResults.set(crawlId, result);
+      }
+    }).catch(error => {
+      console.error('Error during crawling:', error);
+      const result = checkResults.get(crawlId);
+      if (result) {
+        result.completed = true;
+        checkResults.set(crawlId, result);
+      }
+    });
+
+    // Send immediate response with crawl ID
+    res.json({
+      crawlId,
+      message: 'URL crawling started'
+    });
+
+  } catch (error) {
+    console.error('Error initiating crawl:', error);
+    res.status(500).json({ error: 'Failed to start URL crawling' });
+  }
+};
+
 router.post('/check-url', checkUrlHandler);
 router.get('/check-results/:checkId', getCheckResultsHandler);
+router.post('/crawl-urls', crawlUrlsHandler);
 
 // Use the router
 app.use('/api', router);
