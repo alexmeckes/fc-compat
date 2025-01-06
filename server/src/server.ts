@@ -578,7 +578,8 @@ const getCheckResultsHandler: express.RequestHandler = async (req, res) => {
   res.json({
     completed: result.completed,
     ssl: result.ssl,
-    robotsTxt: result.robotsTxt
+    robotsTxt: result.robotsTxt,
+    crawledUrls: result.crawledUrls
   });
 };
 

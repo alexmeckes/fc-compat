@@ -35,6 +35,12 @@ interface AdditionalChecks {
     userAgent: string;
     warnings?: string[];
   };
+  crawledUrls?: {
+    url: string;
+    status: number;
+    type: 'success' | 'redirect' | 'error';
+    timestamp: string;
+  }[];
 }
 
 export async function checkUrl(url: string, config: CrawlConfig) {
@@ -75,7 +81,7 @@ export async function checkUrl(url: string, config: CrawlConfig) {
   }
 }
 
-async function pollAdditionalResults(checkId: string, maxAttempts = 10): Promise<AdditionalChecks | null> {
+async function pollAdditionalResults(checkId: string, maxAttempts = 30): Promise<AdditionalChecks | null> {
   let attempts = 0;
   
   while (attempts < maxAttempts) {
@@ -91,7 +97,8 @@ async function pollAdditionalResults(checkId: string, maxAttempts = 10): Promise
 
       const result: AdditionalChecks = await response.json();
       
-      if (result.completed) {
+      // Only return if we have completed and have crawled URLs
+      if (result.completed && result.crawledUrls) {
         return result;
       }
 
