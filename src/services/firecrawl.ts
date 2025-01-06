@@ -69,14 +69,25 @@ export const firecrawlService = {
       console.log('Making request to Firecrawl with URL:', url);
       console.log('Configuration:', config);
       
-      const requestBody: MapParams = {
+      const requestBody = {
         url: url.startsWith('http') ? url : `https://${url}`,
-        ...config
+        formats: ['html'],
+        onlyMainContent: false,
+        timeout: 30000,
+        skipTlsVerification: false,
+        waitFor: 1000,
+        crawlerOptions: {
+          maxDepth: config.maxDepth || 2,
+          limit: config.limit || 100,
+          sitemapOnly: config.sitemapOnly || false,
+          ignoreSitemap: config.ignoreSitemap || false,
+          includeSubdomains: config.includeSubdomains || false,
+        }
       };
       
       console.log('Request body:', requestBody);
 
-      const response = await fetch(`${BASE_URL}/map`, {
+      const response = await fetch(`${BASE_URL}/crawl`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -99,13 +110,12 @@ export const firecrawlService = {
       const data = await response.json();
       console.log('Response data:', data);
       
-      if (!data.links || !Array.isArray(data.links)) {
-        throw new Error('Invalid response format: missing links array');
-      }
+      // Extract URLs from the crawl response
+      const urls = data.data?.map((item: any) => item.metadata?.sourceURL).filter(Boolean) || [];
 
       return {
         success: true,
-        links: data.links
+        links: urls
       };
     } catch (error) {
       console.error('Error in analyzeUrl:', error);
