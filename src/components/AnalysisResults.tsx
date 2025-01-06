@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UrlList } from './UrlList';
+import { firecrawlService } from '../services/firecrawl';
 
 interface AnalysisResultsProps {
   result: {
@@ -54,69 +55,47 @@ const StatusIndicator: React.FC<{ status: 'success' | 'warning' | 'error' }> = (
 };
 
 export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result: initialResult }) => {
+  const [result, setResult] = useState(initialResult);
   const [isCrawling, setIsCrawling] = useState(false);
   const [crawlStarted, setCrawlStarted] = useState(false);
-  const [crawlId, setCrawlId] = useState<string | null>(null);
-  const [result, setResult] = useState(initialResult);
-  const [crawledUrls, setCrawledUrls] = useState<{
-    url: string;
-    status: number;
-    type: 'success' | 'redirect' | 'error';
-    timestamp: string;
-  }[] | null>(null);
 
-  // Update result when prop changes
   useEffect(() => {
     setResult(initialResult);
-    // Reset crawl state when initial result changes
-    setCrawlStarted(false);
-    setIsCrawling(false);
-    setCrawlId(null);
-    setCrawledUrls(null);
   }, [initialResult]);
 
-  // Poll for crawl results
-  useEffect(() => {
-    if (!crawlId) return;
+  const handleDiscoverUrls = async () => {
+    if (!result) return;
+    
+    setIsCrawling(true);
+    setCrawlStarted(true);
+    try {
+      const mapResult = await firecrawlService.analyzeUrl(result.url, {
+        sitemapOnly: false,
+        ignoreSitemap: false,
+        includeSubdomains: false,
+        maxDepth: 2,
+        limit: 100,
+      });
 
-    const pollCrawlResults = async () => {
-      try {
-        const encodedCrawlId = encodeURIComponent(crawlId);
-        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/crawl-results/${encodedCrawlId}`);
-        if (!response.ok) {
-          console.error('Error polling crawl results:', response.status);
-          return;
-        }
-
-        const data = await response.json();
-        console.log('Received crawl results:', data);
-        
-        // Update SSL and robots.txt data if available
-        if (data.ssl || data.robotsTxt) {
-          setResult(prev => prev ? {
-            ...prev,
-            ssl: data.ssl || prev.ssl,
-            robotsTxt: data.robotsTxt || prev.robotsTxt
-          } : prev);
-        }
-
-        // Update crawled URLs if available
-        if (data.crawledUrls) {
-          setCrawledUrls(data.crawledUrls);
-        }
-
-        // Stop polling if completed
-        if (data.completed) {
-          setIsCrawling(false);
-        }
-      } catch (error) {
-        console.error('Error polling crawl results:', error);
+      if (mapResult.success && mapResult.links) {
+        setResult(prev => ({
+          ...prev!,
+          crawledUrls: mapResult.links.map(url => ({
+            url,
+            status: 200,
+            type: 'success',
+            timestamp: new Date().toISOString()
+          }))
+        }));
       }
-    };
-
-    const interval = setInterval(pollCrawlResults, 1000);
-    return () => clearInterval(interval);
-  }, [crawlId]);
+    } catch (error) {
+      console.error('Error discovering URLs:', error);
+      // Keep existing error state
+    } finally {
+      setIsCrawling(false);
+      setCrawlStarted(false);
+    }
+  };
 
   if (!result) return null;
 
@@ -125,40 +104,6 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result: initia
     if (statusCode >= 200 && statusCode < 300) return 'success';
     if (statusCode >= 300 && statusCode < 400) return 'warning';
     return 'error';
-  };
-
-  const handleDiscoverUrls = async () => {
-    setIsCrawling(true);
-    setCrawlStarted(true);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/crawl-urls`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          url: result.url,
-          config: {
-            sitemapOnly: false,
-            ignoreSitemap: false,
-            includeSubdomains: false,
-            maxDepth: 2,
-            limit: 100,
-          }
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to start URL discovery');
-      }
-
-      const data = await response.json();
-      setCrawlId(data.crawlId);
-    } catch (error) {
-      console.error('Error starting URL discovery:', error);
-      setIsCrawling(false);
-      setCrawlStarted(false);
-    }
   };
 
   const getErrorTypeDisplay = (type?: string) => {
@@ -385,8 +330,8 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result: initia
               </span>
             )}
           </div>
-          {(crawledUrls || result.crawledUrls) && (
-            <UrlList urls={crawledUrls || result.crawledUrls || []} />
+          {(result.crawledUrls || result.crawledUrls) && (
+            <UrlList urls={result.crawledUrls || []} />
           )}
         </div>
       </div>
