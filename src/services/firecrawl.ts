@@ -2,7 +2,7 @@ import { CrawlConfig } from '../components/UrlInput';
 
 // Get API key from environment variable or fallback to hardcoded value for development
 const API_KEY = process.env.FIRECRAWL_API_KEY || 'fc-8931d65d88d84608abe543181f57d7e4';
-const BASE_URL = 'https://api.firecrawl.dev/v0';
+const BASE_URL = 'https://api.firecrawl.dev/v1';
 
 interface MapResponse {
   success: boolean;
@@ -66,28 +66,17 @@ interface FirecrawlError {
 export const firecrawlService = {
   async analyzeUrl(url: string, config: CrawlConfig): Promise<MapResponse> {
     try {
-      console.log('Making request to Firecrawl with URL:', url);
+      console.log('Making map request to Firecrawl with URL:', url);
       console.log('Configuration:', config);
       
-      const requestBody = {
+      const requestBody: MapParams = {
         url: url.startsWith('http') ? url : `https://${url}`,
-        formats: ['html'],
-        onlyMainContent: false,
-        timeout: 30000,
-        skipTlsVerification: false,
-        waitFor: 1000,
-        crawlerOptions: {
-          maxDepth: config.maxDepth || 2,
-          limit: config.limit || 100,
-          sitemapOnly: config.sitemapOnly || false,
-          ignoreSitemap: config.ignoreSitemap || false,
-          includeSubdomains: config.includeSubdomains || false,
-        }
+        ...config
       };
       
       console.log('Request body:', requestBody);
 
-      const response = await fetch(`${BASE_URL}/crawl`, {
+      const response = await fetch(`${BASE_URL}/map`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -110,12 +99,13 @@ export const firecrawlService = {
       const data = await response.json();
       console.log('Response data:', data);
       
-      // Extract URLs from the crawl response
-      const urls = data.data?.map((item: any) => item.metadata?.sourceURL).filter(Boolean) || [];
+      if (!data.links || !Array.isArray(data.links)) {
+        throw new Error('Invalid response format: missing links array');
+      }
 
       return {
         success: true,
-        links: urls
+        links: data.links
       };
     } catch (error) {
       console.error('Error in analyzeUrl:', error);
