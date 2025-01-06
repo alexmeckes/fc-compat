@@ -1,9 +1,9 @@
 {
   "version": 2,
-  "buildCommand": "npm run server:build && npm run build",
+  "buildCommand": "npm run server:build && npm run vercel-build",
   "builds": [
     {
-      "src": "server/src/server.ts",
+      "src": "server/dist/server.js",
       "use": "@vercel/node"
     },
     {
@@ -18,7 +18,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "server/src/server.ts"
+      "dest": "server/dist/server.js"
     },
     {
       "handle": "filesystem"
