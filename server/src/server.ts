@@ -393,13 +393,28 @@ async function fetchSitemap(url: string, config: CrawlConfig): Promise<string[]>
   }
 }
 
+// Store check results in memory (in production, this should use Redis or similar)
+const checkResults = new Map<string, {
+  ssl?: UrlCheckResult['ssl'];
+  robotsTxt?: UrlCheckResult['robotsTxt'];
+  completed: boolean;
+  timestamp: number;
+}>();
+
+// Clean up old results periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of checkResults.entries()) {
+    if (now - value.timestamp > 5 * 60 * 1000) { // 5 minutes
+      checkResults.delete(key);
+    }
+  }
+}, 60 * 1000); // Clean up every minute
+
 // URL check endpoint
-const checkUrlHandler = async (req: Request, res: Response) => {
+const checkUrlHandler: express.RequestHandler = async (req, res) => {
   console.log('Received request for URL:', req.body.url);
   
-  // Set a longer timeout for the response
-  res.setTimeout(30000); // 30 seconds timeout
-
   const { url, config = {
     sitemapOnly: false,
     ignoreSitemap: false,
@@ -413,7 +428,8 @@ const checkUrlHandler = async (req: Request, res: Response) => {
   try {
     if (!url) {
       console.log('No URL provided');
-      return res.status(400).json({ error: 'URL is required' });
+      res.status(400).json({ error: 'URL is required' });
+      return;
     }
 
     // Add https:// if no protocol specified
@@ -422,8 +438,18 @@ const checkUrlHandler = async (req: Request, res: Response) => {
     
     if (!isValidUrl(urlToCheck)) {
       console.log('Invalid URL format:', urlToCheck);
-      return res.status(400).json({ error: 'Invalid URL format' });
+      res.status(400).json({ error: 'Invalid URL format' });
+      return;
     }
+
+    // Generate a unique ID for this check
+    const checkId = Buffer.from(urlToCheck).toString('base64');
+    
+    // Initialize check results
+    checkResults.set(checkId, {
+      completed: false,
+      timestamp: Date.now()
+    });
 
     // Initial URL check with increased timeout
     console.log('Starting initial URL check...');
@@ -443,14 +469,46 @@ const checkUrlHandler = async (req: Request, res: Response) => {
         contentType: response.headers['content-type']
       });
 
-      // Return initial response immediately
-      return res.json({
+      // Send initial response
+      res.json({
+        checkId,
         url: urlToCheck,
         isValid: response.status >= 200 && response.status < 400,
         statusCode: response.status,
         isSecure: urlToCheck.startsWith('https://'),
         message: 'Initial check complete. Additional checks in progress.'
       });
+
+      // Perform additional checks asynchronously
+      try {
+        const [sslResult, robotsTxtResult] = await Promise.allSettled([
+          checkSSL(new URL(urlToCheck).hostname),
+          checkRobotsTxt(urlToCheck)
+        ]);
+
+        // Store the results
+        const result = checkResults.get(checkId);
+        if (result) {
+          result.ssl = sslResult.status === 'fulfilled' ? sslResult.value : undefined;
+          result.robotsTxt = robotsTxtResult.status === 'fulfilled' ? robotsTxtResult.value : undefined;
+          result.completed = true;
+          checkResults.set(checkId, result);
+        }
+
+        // Log results of additional checks
+        console.log('Additional checks completed:', {
+          ssl: sslResult.status === 'fulfilled' ? sslResult.value : null,
+          robotsTxt: robotsTxtResult.status === 'fulfilled' ? robotsTxtResult.value : null
+        });
+
+      } catch (error) {
+        console.error('Error during additional checks:', error);
+        const result = checkResults.get(checkId);
+        if (result) {
+          result.completed = true;
+          checkResults.set(checkId, result);
+        }
+      }
 
     } catch (error) {
       console.error('Error during initial URL check:', error);
@@ -462,7 +520,8 @@ const checkUrlHandler = async (req: Request, res: Response) => {
         });
         
         if (error.code === 'ECONNABORTED') {
-          return res.json({
+          res.json({
+            checkId,
             url: urlToCheck,
             isValid: false,
             statusCode: 504,
@@ -470,6 +529,7 @@ const checkUrlHandler = async (req: Request, res: Response) => {
             errorType: 'NETWORK',
             isSecure: urlToCheck.startsWith('https://')
           });
+          return;
         }
       }
       throw error;
@@ -478,7 +538,7 @@ const checkUrlHandler = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Unhandled error:', error);
     const errorInfo = detectErrorType(error);
-    return res.json({
+    res.json({
       url: url,
       isValid: false,
       error: errorInfo.message,
@@ -488,7 +548,30 @@ const checkUrlHandler = async (req: Request, res: Response) => {
   }
 };
 
+// Get additional check results endpoint
+const getCheckResultsHandler: express.RequestHandler = async (req, res) => {
+  const { checkId } = req.params;
+  
+  if (!checkId) {
+    res.status(400).json({ error: 'Check ID is required' });
+    return;
+  }
+
+  const result = checkResults.get(checkId);
+  if (!result) {
+    res.status(404).json({ error: 'Check results not found' });
+    return;
+  }
+
+  res.json({
+    completed: result.completed,
+    ssl: result.ssl,
+    robotsTxt: result.robotsTxt
+  });
+};
+
 router.post('/check-url', checkUrlHandler);
+router.get('/check-results/:checkId', getCheckResultsHandler);
 
 // Use the router
 app.use('/api', router);
