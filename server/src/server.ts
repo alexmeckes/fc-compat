@@ -35,7 +35,14 @@ app.use(express.json());
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('Server Error:', err);
+  console.error('Server Error:', {
+    message: err.message,
+    stack: err.stack,
+    url: req.url,
+    method: req.method,
+    body: req.body
+  });
+  
   res.status(500).json({
     error: 'Internal Server Error',
     message: err.message,
@@ -388,6 +395,8 @@ async function fetchSitemap(url: string, config: CrawlConfig): Promise<string[]>
 
 // URL check endpoint
 const checkUrlHandler = async (req: Request, res: Response) => {
+  console.log('Received request for URL:', req.body.url);
+  
   // Set a longer timeout for the response
   res.setTimeout(30000); // 30 seconds timeout
 
@@ -399,6 +408,8 @@ const checkUrlHandler = async (req: Request, res: Response) => {
     limit: 100,
   } } = req.body;
   
+  console.log('Processing URL with config:', { url, config });
+  
   const crawledUrls: UrlCheckResult['crawledUrls'] = [];
   const seenUrls = new Set<string>();
   const queue: { url: string; depth: number }[] = [];
@@ -406,17 +417,21 @@ const checkUrlHandler = async (req: Request, res: Response) => {
 
   try {
     if (!url) {
+      console.log('No URL provided');
       return res.status(400).json({ error: 'URL is required' });
     }
 
     // Add https:// if no protocol specified
     const urlToCheck = url.startsWith('http') ? url : `https://${url}`;
+    console.log('Normalized URL:', urlToCheck);
     
     if (!isValidUrl(urlToCheck)) {
+      console.log('Invalid URL format:', urlToCheck);
       return res.status(400).json({ error: 'Invalid URL format' });
     }
 
     // Initial URL check with increased timeout
+    console.log('Starting initial URL check...');
     let response: AxiosResponse;
     try {
       response = await axios.get(urlToCheck, {
@@ -427,17 +442,31 @@ const checkUrlHandler = async (req: Request, res: Response) => {
           'User-Agent': 'Mozilla/5.0 (compatible; CrawlabilityChecker/1.0)'
         }
       });
+      console.log('Initial URL check response:', { 
+        status: response.status, 
+        statusText: response.statusText,
+        contentType: response.headers['content-type']
+      });
     } catch (error) {
-      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
-        return res.json({
-          url: urlToCheck,
-          isValid: false,
-          statusCode: 504,
-          error: 'Request timed out',
-          errorType: 'NETWORK',
-          isSecure: urlToCheck.startsWith('https://'),
-          crawledUrls
+      console.error('Error during initial URL check:', error);
+      if (axios.isAxiosError(error)) {
+        console.log('Axios error details:', {
+          code: error.code,
+          message: error.message,
+          response: error.response?.status
         });
+        
+        if (error.code === 'ECONNABORTED') {
+          return res.json({
+            url: urlToCheck,
+            isValid: false,
+            statusCode: 504,
+            error: 'Request timed out',
+            errorType: 'NETWORK',
+            isSecure: urlToCheck.startsWith('https://'),
+            crawledUrls
+          });
+        }
       }
       throw error;
     }
