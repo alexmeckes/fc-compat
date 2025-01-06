@@ -65,7 +65,6 @@ const CONFIG_OPTIONS: ConfigOption[] = [
 export const UrlInput: React.FC<UrlInputProps> = ({ onAnalyze, onResult }) => {
   const [url, setUrl] = useState('');
   const [inputError, setInputError] = useState('');
-  const [showConfig, setShowConfig] = useState(false);
   const [configErrors, setConfigErrors] = useState<Partial<Record<keyof CrawlConfig, string>>>({});
   const [config, setConfig] = useState<CrawlConfig>({
     sitemapOnly: false,
@@ -205,9 +204,125 @@ export const UrlInput: React.FC<UrlInputProps> = ({ onAnalyze, onResult }) => {
     <div className="w-full max-w-2xl mx-auto p-8">
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="space-y-4">
-          <label htmlFor="url" className="block text-xl font-semibold text-gray-800">
-            Enter Website URL
-          </label>
+          <div className="flex justify-between items-center">
+            <label htmlFor="url" className="block text-xl font-semibold text-gray-800">
+              Enter Website URL
+            </label>
+            <Popover className="relative">
+              {({ open }) => (
+                <>
+                  <Popover.Button
+                    className={`p-2 rounded-lg transition-colors duration-200 ${
+                      open ? 'bg-gray-100' : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <svg
+                      className={`w-6 h-6 ${open ? 'text-blue-600' : 'text-gray-400'}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                  </Popover.Button>
+                  <Transition
+                    as={Fragment}
+                    enter="transition ease-out duration-200"
+                    enterFrom="opacity-0 translate-y-1"
+                    enterTo="opacity-100 translate-y-0"
+                    leave="transition ease-in duration-150"
+                    leaveFrom="opacity-100 translate-y-0"
+                    leaveTo="opacity-0 translate-y-1"
+                  >
+                    <Popover.Panel className="absolute right-0 z-10 mt-2 w-96 origin-top-right">
+                      <div className="bg-white rounded-xl shadow-lg ring-1 ring-black ring-opacity-5 p-4">
+                        <div className="mb-3 pb-2 border-b">
+                          <h3 className="text-lg font-medium text-gray-900">Advanced Settings</h3>
+                          <p className="text-sm text-gray-500">Configure crawling behavior and limits</p>
+                        </div>
+                        <div className="space-y-3">
+                          {CONFIG_OPTIONS.map(option => {
+                            const hasError = !!configErrors[option.key];
+                            return (
+                              <div key={option.key} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
+                                <div className="flex-1 mr-4">
+                                  <div className="group relative">
+                                    <label className="text-sm font-medium text-gray-800 cursor-help group-hover:text-blue-600 transition-colors duration-200">
+                                      {option.label}
+                                      <span className="ml-2 text-gray-400 group-hover:text-blue-400">ⓘ</span>
+                                    </label>
+                                    <div className="hidden group-hover:block absolute left-0 bottom-full mb-2 w-72">
+                                      <div className="bg-gray-900 text-white text-sm rounded-lg p-3 shadow-lg">
+                                        {option.tooltip}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {option.type === 'toggle' ? (
+                                  <div className="relative inline-block w-14 align-middle select-none transition duration-200 ease-in">
+                                    <input
+                                      type="checkbox"
+                                      checked={config[option.key] as boolean}
+                                      onChange={(e) => handleConfigChange(option.key, e.target.checked)}
+                                      className={`toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-200 ease-in-out ${
+                                        config[option.key] 
+                                          ? 'transform translate-x-full border-blue-500 shadow-md' 
+                                          : 'border-gray-300'
+                                      }`}
+                                    />
+                                    <label className={`toggle-label block overflow-hidden h-7 rounded-full cursor-pointer transition-all duration-200 ease-in ${
+                                      config[option.key] 
+                                        ? 'bg-blue-500' 
+                                        : 'bg-gray-200 hover:bg-gray-300'
+                                    }`}></label>
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col items-end">
+                                    <div className="relative">
+                                      <input
+                                        type="number"
+                                        min={option.min}
+                                        max={option.max}
+                                        value={config[option.key] as number}
+                                        onChange={(e) => {
+                                          const value = e.target.value === '' ? option.min || 0 : parseInt(e.target.value);
+                                          handleConfigChange(option.key, value);
+                                        }}
+                                        className={`input-base w-28 ${hasError ? 'input-error' : ''}`}
+                                      />
+                                      {hasError && (
+                                        <div className="absolute right-0 mt-2">
+                                          <span className="text-xs font-medium text-red-500 bg-red-50 px-2.5 py-1.5 rounded-lg border border-red-200">
+                                            {configErrors[option.key]}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </Popover.Panel>
+                  </Transition>
+                </>
+              )}
+            </Popover>
+          </div>
           <div className="relative">
             <div className={`flex rounded-xl shadow-sm transition-all duration-200 ${
               inputError ? 'shadow-red-100' : 'hover:shadow-lg'
@@ -260,139 +375,6 @@ export const UrlInput: React.FC<UrlInputProps> = ({ onAnalyze, onResult }) => {
               </p>
             )}
           </div>
-        </div>
-
-        <div className="relative">
-          <button
-            type="button"
-            className={`w-full text-base font-medium px-5 py-4 rounded-xl transition-all duration-200 flex items-center justify-between ${
-              showConfig 
-                ? 'card bg-white text-gray-900 shadow-md hover:shadow-lg border-2 border-gray-200' 
-                : 'bg-gray-50 text-gray-600 hover:bg-white hover:shadow-md border border-gray-200'
-            }`}
-            onClick={() => setShowConfig(!showConfig)}
-          >
-            <span>Advanced Configuration</span>
-            <svg
-              className={`h-5 w-5 transform transition-transform duration-200 ${showConfig ? 'rotate-180' : ''}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
-
-          <Transition
-            show={showConfig}
-            as={Fragment}
-            enter="transition-all ease-out duration-300"
-            enterFrom="opacity-0 -translate-y-2"
-            enterTo="opacity-100 translate-y-0"
-            leave="transition-all ease-in duration-200"
-            leaveFrom="opacity-100 translate-y-0"
-            leaveTo="opacity-0 -translate-y-2"
-          >
-            <div className="mt-4 space-y-3">
-              {CONFIG_OPTIONS.map(option => {
-                const hasError = !!configErrors[option.key];
-                return (
-                  <div key={option.key} className="card p-4 flex items-center justify-between">
-                    <Popover className="relative flex-1 mr-4">
-                      {({ open }) => (
-                        <>
-                          <Popover.Button className="flex items-center group focus:outline-none">
-                            <label className="text-sm font-medium text-gray-800 cursor-help group-hover:text-blue-600 transition-colors duration-200">
-                              {option.label}
-                              <svg 
-                                className={`w-4 h-4 ml-2 inline-block transition-colors duration-200 ${
-                                  open ? 'text-blue-500' : 'text-gray-400 group-hover:text-blue-400'
-                                }`}
-                                fill="none" 
-                                viewBox="0 0 24 24" 
-                                stroke="currentColor"
-                              >
-                                <path 
-                                  strokeLinecap="round" 
-                                  strokeLinejoin="round" 
-                                  strokeWidth={2} 
-                                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-                                />
-                              </svg>
-                            </label>
-                          </Popover.Button>
-                          <Transition
-                            as={Fragment}
-                            enter="transition ease-out duration-200"
-                            enterFrom="opacity-0 translate-y-1"
-                            enterTo="opacity-100 translate-y-0"
-                            leave="transition ease-in duration-150"
-                            leaveFrom="opacity-100 translate-y-0"
-                            leaveTo="opacity-0 translate-y-1"
-                          >
-                            <Popover.Panel className="tooltip w-72 px-4 py-3 mt-2">
-                              <div className="relative">
-                                <div className="absolute -top-2 left-4 w-4 h-4 bg-gray-900 transform rotate-45" />
-                                <p className="relative z-10 leading-relaxed">{option.tooltip}</p>
-                              </div>
-                            </Popover.Panel>
-                          </Transition>
-                        </>
-                      )}
-                    </Popover>
-                    
-                    {option.type === 'toggle' ? (
-                      <div className="relative inline-block w-14 align-middle select-none transition duration-200 ease-in">
-                        <input
-                          type="checkbox"
-                          checked={config[option.key] as boolean}
-                          onChange={(e) => handleConfigChange(option.key, e.target.checked)}
-                          className={`toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-200 ease-in-out ${
-                            config[option.key] 
-                              ? 'transform translate-x-full border-blue-500 shadow-md' 
-                              : 'border-gray-300'
-                          }`}
-                        />
-                        <label className={`toggle-label block overflow-hidden h-7 rounded-full cursor-pointer transition-all duration-200 ease-in ${
-                          config[option.key] 
-                            ? 'bg-blue-500' 
-                            : 'bg-gray-200 hover:bg-gray-300'
-                        }`}></label>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-end">
-                        <div className="relative">
-                          <input
-                            type="number"
-                            min={option.min}
-                            max={option.max}
-                            value={config[option.key] as number}
-                            onChange={(e) => {
-                              const value = e.target.value === '' ? option.min || 0 : parseInt(e.target.value);
-                              handleConfigChange(option.key, value);
-                            }}
-                            className={`input-base w-28 ${hasError ? 'input-error' : ''}`}
-                          />
-                          {hasError && (
-                            <div className="absolute right-0 mt-2">
-                              <span className="text-xs font-medium text-red-500 bg-red-50 px-2.5 py-1.5 rounded-lg border border-red-200">
-                                {configErrors[option.key]}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </Transition>
         </div>
       </form>
     </div>
