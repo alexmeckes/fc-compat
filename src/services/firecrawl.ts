@@ -162,19 +162,31 @@ export const firecrawlService = {
       }
 
       const data = await response.json();
-      console.log('Response data:', data);
+      console.log('Raw Firecrawl response:', JSON.stringify(data, null, 2));
 
       // Transform response if needed to match our interface
       const transformedData: ScrapeResponse = {
         success: true,
         data: {
           ...data.data,
+          metadata: {
+            ...data.data.metadata,
+            statusCode: data.data.metadata.statusCode || 200, // Default to 200 if not provided
+          },
           // Move SSL and robots.txt data to the correct location if they're at the top level
-          ssl: data.data.ssl || data.ssl,
-          robotsTxt: data.data.robotsTxt || data.robotsTxt,
+          ssl: data.data.ssl || data.ssl || {
+            valid: url.startsWith('https://'),
+            details: { protocol: 'https' }
+          },
+          robotsTxt: data.data.robotsTxt || data.robotsTxt || {
+            exists: false,
+            allowed: true,
+            userAgent: '*'
+          },
         }
       };
 
+      console.log('Transformed response:', JSON.stringify(transformedData, null, 2));
       return transformedData;
     } catch (error) {
       console.error('Error in scrapeUrl:', error);
