@@ -10,18 +10,38 @@ const router = Router();
 const port = process.env.PORT || 3000;
 
 // CORS configuration
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',');
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:5176',
+  'https://fc-compat.vercel.app',
+  'https://fc-compat-git-main-alexmeckes.vercel.app',
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ''
+].filter(Boolean);
+
 app.use(cors({
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(new Error('Not allowed by CORS'), false);
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all origins in production for now
     }
-    return callback(null, true);
-  }
+  },
+  credentials: true
 }));
 
 app.use(express.json());
+
+// Error handling middleware
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error('Server Error:', err);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: err.message,
+    errorType: 'UNKNOWN'
+  });
+});
 
 // Rate limiting
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
