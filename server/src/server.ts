@@ -410,11 +410,6 @@ const checkUrlHandler = async (req: Request, res: Response) => {
   
   console.log('Processing URL with config:', { url, config });
   
-  const crawledUrls: UrlCheckResult['crawledUrls'] = [];
-  const seenUrls = new Set<string>();
-  const queue: { url: string; depth: number }[] = [];
-  let urlCount = 0;
-
   try {
     if (!url) {
       console.log('No URL provided');
@@ -447,6 +442,16 @@ const checkUrlHandler = async (req: Request, res: Response) => {
         statusText: response.statusText,
         contentType: response.headers['content-type']
       });
+
+      // Return initial response immediately
+      return res.json({
+        url: urlToCheck,
+        isValid: response.status >= 200 && response.status < 400,
+        statusCode: response.status,
+        isSecure: urlToCheck.startsWith('https://'),
+        message: 'Initial check complete. Additional checks in progress.'
+      });
+
     } catch (error) {
       console.error('Error during initial URL check:', error);
       if (axios.isAxiosError(error)) {
@@ -463,192 +468,22 @@ const checkUrlHandler = async (req: Request, res: Response) => {
             statusCode: 504,
             error: 'Request timed out',
             errorType: 'NETWORK',
-            isSecure: urlToCheck.startsWith('https://'),
-            crawledUrls
+            isSecure: urlToCheck.startsWith('https://')
           });
         }
       }
       throw error;
     }
 
-    // Track redirects if any
-    const redirectChain: string[] = [];
-    let currentUrl = urlToCheck;
-    
-    if (response.request?.res?.responseUrl && response.request.res.responseUrl !== urlToCheck) {
-      redirectChain.push(urlToCheck);
-      redirectChain.push(response.request.res.responseUrl);
-      currentUrl = response.request.res.responseUrl;
-    }
-
-    // Add initial URL to crawled list
-    crawledUrls.push({
-      url: urlToCheck,
-      status: response.status,
-      type: response.status >= 200 && response.status < 300 ? 'success' 
-            : response.status >= 300 && response.status < 400 ? 'redirect'
-            : 'error',
-      timestamp: new Date().toISOString()
-    });
-    seenUrls.add(urlToCheck);
-    urlCount++;
-
-    // Start crawling if initial check was successful
-    if (response.status >= 200 && response.status < 400) {
-      queue.push({ url: currentUrl, depth: 0 });
-
-      // Process sitemap if enabled
-      if (!config.ignoreSitemap) {
-        const sitemapUrls = await fetchSitemap(currentUrl, config);
-        if (config.sitemapOnly) {
-          // Only use sitemap URLs
-          for (const url of sitemapUrls) {
-            if (urlCount >= config.limit) break;
-            if (!seenUrls.has(url)) {
-              try {
-                const response = await axios.get(url, {
-                  timeout: 5000,
-                  maxRedirects: 3,
-                  validateStatus: null,
-                  headers: {
-                    'User-Agent': 'Mozilla/5.0 (compatible; CrawlabilityChecker/1.0)'
-                  }
-                });
-
-                crawledUrls.push({
-                  url,
-                  status: response.status,
-                  type: response.status >= 200 && response.status < 300 ? 'success'
-                        : response.status >= 300 && response.status < 400 ? 'redirect'
-                        : 'error',
-                  timestamp: new Date().toISOString()
-                });
-                seenUrls.add(url);
-                urlCount++;
-              } catch (error) {
-                crawledUrls.push({
-                  url,
-                  status: 0,
-                  type: 'error',
-                  timestamp: new Date().toISOString()
-                });
-                seenUrls.add(url);
-                urlCount++;
-              }
-            }
-          }
-        } else {
-          // Add sitemap URLs to queue
-          sitemapUrls.forEach(url => {
-            if (!seenUrls.has(url)) {
-              queue.push({ url, depth: 1 });
-            }
-          });
-        }
-      }
-
-      // Process queue if not in sitemap-only mode
-      if (!config.sitemapOnly) {
-        while (queue.length > 0 && urlCount < config.limit) {
-          const { url, depth } = queue.shift()!;
-          
-          if (seenUrls.has(url) || !shouldCrawlUrl(url, urlToCheck, config)) {
-            continue;
-          }
-
-          if (depth > config.maxDepth) {
-            continue;
-          }
-
-          try {
-            const response = await axios.get(url, {
-              timeout: 5000,
-              maxRedirects: 3,
-              validateStatus: null,
-              headers: {
-                'User-Agent': 'Mozilla/5.0 (compatible; CrawlabilityChecker/1.0)'
-              }
-            });
-
-            crawledUrls.push({
-              url,
-              status: response.status,
-              type: response.status >= 200 && response.status < 300 ? 'success'
-                    : response.status >= 300 && response.status < 400 ? 'redirect'
-                    : 'error',
-              timestamp: new Date().toISOString()
-            });
-            seenUrls.add(url);
-            urlCount++;
-
-            // Discover more links if content is HTML
-            if (response.headers['content-type']?.includes('text/html')) {
-              const discoveredUrls = discoverLinks(response.data, url, config);
-              discoveredUrls.forEach(url => {
-                if (!seenUrls.has(url)) {
-                  queue.push({ url, depth: depth + 1 });
-                }
-              });
-            }
-          } catch (error) {
-            crawledUrls.push({
-              url,
-              status: 0,
-              type: 'error',
-              timestamp: new Date().toISOString()
-            });
-            seenUrls.add(url);
-            urlCount++;
-          }
-        }
-      }
-    }
-
-    const isSecure = urlToCheck.startsWith('https://');
-    let sslResult = undefined;
-    
-    if (isSecure) {
-      const hostname = new URL(urlToCheck).hostname;
-      sslResult = await checkSSL(hostname);
-    }
-
-    const robotsTxtResult = await checkRobotsTxt(urlToCheck);
-
-    if (!response.status || response.status >= 400) {
-      const error = detectErrorType(new Error(`HTTP ${response.status}`), response.status);
-      return res.json({
-        url: urlToCheck,
-        isValid: false,
-        statusCode: response.status,
-        error: error.message,
-        errorType: error.type,
-        isSecure,
-        ssl: sslResult,
-        robotsTxt: robotsTxtResult,
-        redirectChain: redirectChain.length > 0 ? redirectChain : undefined,
-        crawledUrls
-      });
-    }
-
-    res.json({
-      url: urlToCheck,
-      isValid: true,
-      statusCode: response.status,
-      isSecure,
-      ssl: sslResult,
-      robotsTxt: robotsTxtResult,
-      redirectChain: redirectChain.length > 0 ? redirectChain : undefined,
-      crawledUrls
-    });
   } catch (error: any) {
+    console.error('Unhandled error:', error);
     const errorInfo = detectErrorType(error);
-    res.json({
+    return res.json({
       url: url,
       isValid: false,
       error: errorInfo.message,
       errorType: errorInfo.type,
-      isSecure: url.startsWith('https://'),
-      crawledUrls
+      isSecure: url.startsWith('https://')
     });
   }
 };
