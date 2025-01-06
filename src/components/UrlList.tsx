@@ -78,7 +78,7 @@ export const UrlList: React.FC<UrlListProps> = ({ urls }) => {
 
   return (
     <div className="border-t pt-4 space-y-4">
-      <h3 className="text-lg font-medium text-gray-900">Crawled URLs</h3>
+      <h3 className="text-lg font-medium text-gray-900">Discovered URLs</h3>
       <div className="space-y-4">
         <UrlGroup title="Successful URLs" urls={urls} type="success" />
         <UrlGroup title="Redirects" urls={urls} type="redirect" />
