@@ -207,4 +207,6 @@ export class FirecrawlService {
       throw error;
     }
   }
-} 
+}
+
+export const firecrawlService = new FirecrawlService(); 
