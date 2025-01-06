@@ -15,6 +15,7 @@ interface MapParams extends CrawlConfig {
 interface ScrapeResponse {
   success: boolean;
   data: {
+    html?: string;
     metadata: {
       title: string;
       description?: string;
@@ -22,28 +23,28 @@ interface ScrapeResponse {
       sourceURL: string;
       statusCode: number;
       error?: string;
-    };
-    warning?: string;
-    ssl?: {
-      valid: boolean;
-      issuer?: string;
-      validFrom?: string;
-      validTo?: string;
-      daysUntilExpiry?: number;
-      error?: string;
-      details?: {
-        protocol?: string;
-        cipher?: string;
-        verificationError?: string;
+      ssl?: {
+        valid: boolean;
+        issuer?: string;
+        validFrom?: string;
+        validTo?: string;
+        daysUntilExpiry?: number;
+        error?: string;
+        details?: {
+          protocol?: string;
+          cipher?: string;
+          verificationError?: string;
+        };
+      };
+      robotsTxt?: {
+        exists: boolean;
+        allowed: boolean;
+        content?: string;
+        userAgent: string;
+        warnings?: string[];
       };
     };
-    robotsTxt?: {
-      exists: boolean;
-      allowed: boolean;
-      content?: string;
-      userAgent: string;
-      warnings?: string[];
-    };
+    warning?: string;
   };
 }
 
@@ -116,7 +117,7 @@ export const firecrawlService = {
         url: url.startsWith('http') ? url : `https://${url}`,
         skipTlsVerification: false,
         timeout: 30000,
-        formats: ['ssl', 'robotsTxt'],
+        formats: ['html'],
         onlyMainContent: false,
       };
       
