@@ -1,116 +1,95 @@
 import { CrawlConfig } from '../components/UrlInput';
+import { firecrawlService } from './firecrawl';
 
-const API_URL = import.meta.env.VITE_API_URL || '';
+async function basicHttpCheck(url: string) {
+  try {
+    const response = await fetch(url.startsWith('http') ? url : `https://${url}`);
+    const isSecure = url.startsWith('https://') || url.startsWith('http://') && response.url.startsWith('https://');
 
-interface CheckResponse {
-  checkId: string;
-  url: string;
-  isValid: boolean;
-  statusCode?: number;
-  error?: string;
-  errorType?: string;
-  isSecure: boolean;
-  message?: string;
-}
-
-interface AdditionalChecks {
-  completed: boolean;
-  ssl?: {
-    valid: boolean;
-    issuer?: string;
-    validFrom?: string;
-    validTo?: string;
-    daysUntilExpiry?: number;
-    error?: string;
-    details?: {
-      protocol?: string;
-      cipher?: string;
-      verificationError?: string;
+    return {
+      url,
+      isValid: response.status >= 200 && response.status < 400,
+      statusCode: response.status,
+      error: response.status >= 400 ? `HTTP Error ${response.status}` : undefined,
+      errorType: response.status === 429 ? 'RATE_LIMIT' : 
+                 response.status === 403 ? 'BOT_PROTECTION' :
+                 response.status === 401 ? 'ACCESS_DENIED' :
+                 response.status >= 400 ? 'UNKNOWN' : undefined,
+      isSecure,
+      ssl: {
+        valid: isSecure,
+        details: {
+          protocol: 'https'
+        }
+      },
+      robotsTxt: {
+        exists: false,
+        allowed: true,
+        userAgent: '*'
+      }
     };
-  };
-  robotsTxt?: {
-    exists: boolean;
-    allowed: boolean;
-    content?: string;
-    userAgent: string;
-    warnings?: string[];
-  };
-  crawledUrls?: {
-    url: string;
-    status: number;
-    type: 'success' | 'redirect' | 'error';
-    timestamp: string;
-  }[];
+  } catch (error) {
+    console.error('Basic HTTP check error:', error);
+    return {
+      url,
+      isValid: false,
+      error: error instanceof Error ? error.message : 'Network error',
+      errorType: 'NETWORK',
+      isSecure: false,
+      ssl: {
+        valid: false,
+        error: 'Failed to establish connection'
+      },
+      robotsTxt: {
+        exists: false,
+        allowed: true,
+        userAgent: '*'
+      }
+    };
+  }
 }
 
 export async function checkUrl(url: string, config: CrawlConfig) {
   try {
-    // Initial URL check
-    const response = await fetch(`${API_URL}/api/check-url`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ url, config }),
-    });
+    if (config.useFirecrawl) {
+      const scrapeResult = await firecrawlService.scrapeUrl(url);
 
-    if (!response.ok) {
-      try {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to check URL');
-      } catch (e) {
-        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      if (!scrapeResult.success) {
+        throw new Error('Failed to analyze URL');
       }
-    }
 
-    const initialResult: CheckResponse = await response.json();
+      const { data } = scrapeResult;
+      const { metadata, ssl, robotsTxt } = data;
 
-    // Start polling for additional results
-    if (initialResult.checkId) {
-      const additionalResults = await pollAdditionalResults(initialResult.checkId);
+      // Determine error type based on metadata and warnings
+      let errorType: string | undefined;
+      if (metadata.statusCode === 429) {
+        errorType = 'RATE_LIMIT';
+      } else if (metadata.statusCode === 403) {
+        errorType = 'BOT_PROTECTION';
+      } else if (metadata.statusCode === 401) {
+        errorType = 'ACCESS_DENIED';
+      } else if (ssl?.error) {
+        errorType = 'SSL';
+      } else if (metadata.error) {
+        errorType = 'UNKNOWN';
+      }
+
       return {
-        ...initialResult,
-        ...additionalResults
+        url,
+        isValid: metadata.statusCode >= 200 && metadata.statusCode < 400,
+        statusCode: metadata.statusCode,
+        error: metadata.error,
+        errorType,
+        isSecure: ssl?.valid ?? false,
+        ssl,
+        robotsTxt
       };
+    } else {
+      return await basicHttpCheck(url);
     }
-
-    return initialResult;
   } catch (error) {
     console.error('API Error:', error);
     throw error;
   }
-}
-
-async function pollAdditionalResults(checkId: string, maxAttempts = 30): Promise<AdditionalChecks | null> {
-  let attempts = 0;
-  
-  while (attempts < maxAttempts) {
-    try {
-      const response = await fetch(`${API_URL}/api/check-results/${checkId}`);
-      
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null;
-        }
-        throw new Error(`Server error: ${response.status} ${response.statusText}`);
-      }
-
-      const result: AdditionalChecks = await response.json();
-      
-      // Return results if completed OR if we have SSL/robots.txt data
-      if (result.completed || (result.ssl || result.robotsTxt)) {
-        return result;
-      }
-
-      // Wait 1 second before next attempt
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      attempts++;
-    } catch (error) {
-      console.error('Error polling for results:', error);
-      return null;
-    }
-  }
-
-  console.warn('Max polling attempts reached');
-  return null;
 } 

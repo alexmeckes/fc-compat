@@ -9,6 +9,7 @@ export interface CrawlConfig {
   includeSubdomains: boolean;
   maxDepth: number;
   limit: number;
+  useFirecrawl: boolean;
 }
 
 interface UrlInputProps {
@@ -27,38 +28,44 @@ interface ConfigOption {
 
 const CONFIG_OPTIONS: ConfigOption[] = [
   {
+    key: 'useFirecrawl',
+    label: 'Use Firecrawl API',
+    tooltip: 'Use Firecrawl API for initial analysis (more accurate but uses credits)',
+    type: 'toggle'
+  },
+  {
     key: 'sitemapOnly',
-    label: 'Use Sitemap Only',
-    tooltip: 'Only crawl URLs found in the website\'s sitemap.xml file. This is faster but might miss some pages.',
+    label: 'Sitemap Only',
+    tooltip: 'Only discover URLs from sitemap',
     type: 'toggle'
   },
   {
     key: 'ignoreSitemap',
     label: 'Ignore Sitemap',
-    tooltip: 'Ignore the website\'s sitemap.xml file and discover pages by crawling links. This might be slower but more thorough.',
+    tooltip: 'Ignore sitemap when discovering URLs',
     type: 'toggle'
   },
   {
     key: 'includeSubdomains',
     label: 'Include Subdomains',
-    tooltip: 'Also crawl subdomains (e.g., blog.example.com when crawling example.com). This can significantly increase crawl time.',
+    tooltip: 'Include subdomains when discovering URLs',
     type: 'toggle'
   },
   {
     key: 'maxDepth',
     label: 'Max Depth',
-    tooltip: 'Maximum number of clicks away from the starting URL to crawl. Higher values mean more thorough but slower crawls.',
+    tooltip: 'Maximum depth to crawl (1-5)',
     type: 'number',
     min: 1,
-    max: 10
+    max: 5
   },
   {
     key: 'limit',
     label: 'URL Limit',
-    tooltip: 'Maximum number of URLs to crawl. Use this to prevent extremely large crawls.',
+    tooltip: 'Maximum number of URLs to discover (10-1000)',
     type: 'number',
-    min: 1,
-    max: 5000
+    min: 10,
+    max: 1000
   }
 ];
 
@@ -72,6 +79,7 @@ export const UrlInput: React.FC<UrlInputProps> = ({ onAnalyze, onResult }) => {
     includeSubdomains: false,
     maxDepth: 2,
     limit: 100,
+    useFirecrawl: true
   });
   const [isLoading, setIsLoading] = useState(false);
 
