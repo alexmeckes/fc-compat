@@ -53,10 +53,11 @@ const StatusIndicator: React.FC<{ status: 'success' | 'warning' | 'error' }> = (
   );
 };
 
-export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
+export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result: initialResult }) => {
   const [isCrawling, setIsCrawling] = useState(false);
   const [crawlStarted, setCrawlStarted] = useState(false);
   const [crawlId, setCrawlId] = useState<string | null>(null);
+  const [result, setResult] = useState(initialResult);
   const [crawledUrls, setCrawledUrls] = useState<{
     url: string;
     status: number;
@@ -64,19 +65,48 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
     timestamp: string;
   }[] | null>(null);
 
+  // Update result when prop changes
+  useEffect(() => {
+    setResult(initialResult);
+    // Reset crawl state when initial result changes
+    setCrawlStarted(false);
+    setIsCrawling(false);
+    setCrawlId(null);
+    setCrawledUrls(null);
+  }, [initialResult]);
+
   // Poll for crawl results
   useEffect(() => {
     if (!crawlId) return;
 
     const pollCrawlResults = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/check-results/${crawlId}`);
-        if (!response.ok) return;
+        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/crawl-results/${crawlId}`);
+        if (!response.ok) {
+          console.error('Error polling crawl results:', response.status);
+          return;
+        }
 
         const data = await response.json();
-        if (data.completed && data.crawledUrls) {
+        console.log('Received crawl results:', data);
+        
+        // Update SSL and robots.txt data if available
+        if (data.ssl || data.robotsTxt) {
+          setResult(prev => prev ? {
+            ...prev,
+            ssl: data.ssl || prev.ssl,
+            robotsTxt: data.robotsTxt || prev.robotsTxt
+          } : prev);
+        }
+
+        // Update crawled URLs if available
+        if (data.crawledUrls) {
           setCrawledUrls(data.crawledUrls);
-          setCrawlId(null); // Stop polling
+        }
+
+        // Stop polling if completed
+        if (data.completed) {
+          setCrawlId(null);
           setIsCrawling(false);
         }
       } catch (error) {

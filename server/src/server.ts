@@ -402,12 +402,23 @@ const checkResults = new Map<string, {
   timestamp: number;
 }>();
 
+// Store crawl results separately
+const crawlResults = new Map<string, {
+  ssl?: UrlCheckResult['ssl'];
+  robotsTxt?: UrlCheckResult['robotsTxt'];
+  crawledUrls?: UrlCheckResult['crawledUrls'];
+  completed: boolean;
+  timestamp: number;
+}>();
+
 // Clean up old results periodically
 setInterval(() => {
   const now = Date.now();
-  for (const [key, value] of checkResults.entries()) {
-    if (now - value.timestamp > 5 * 60 * 1000) { // 5 minutes
-      checkResults.delete(key);
+  for (const map of [checkResults, crawlResults]) {
+    for (const [key, value] of map.entries()) {
+      if (now - value.timestamp > 5 * 60 * 1000) { // 5 minutes
+        map.delete(key);
+      }
     }
   }
 }, 60 * 1000); // Clean up every minute
@@ -608,7 +619,7 @@ const crawlUrlsHandler: express.RequestHandler = async (req, res) => {
     const crawlId = Buffer.from(urlToCheck + Date.now().toString()).toString('base64');
     
     // Initialize crawl results
-    checkResults.set(crawlId, {
+    crawlResults.set(crawlId, {
       completed: false,
       timestamp: Date.now()
     });
@@ -620,27 +631,27 @@ const crawlUrlsHandler: express.RequestHandler = async (req, res) => {
     ]);
 
     // Store initial results
-    const result = checkResults.get(crawlId);
+    const result = crawlResults.get(crawlId);
     if (result) {
       result.ssl = sslResult.status === 'fulfilled' ? sslResult.value : undefined;
       result.robotsTxt = robotsTxtResult.status === 'fulfilled' ? robotsTxtResult.value : undefined;
-      checkResults.set(crawlId, result);
+      crawlResults.set(crawlId, result);
     }
 
     // Start crawling in the background
     crawlUrls(urlToCheck, config).then(crawledUrls => {
-      const result = checkResults.get(crawlId);
+      const result = crawlResults.get(crawlId);
       if (result) {
         result.crawledUrls = crawledUrls;
         result.completed = true;
-        checkResults.set(crawlId, result);
+        crawlResults.set(crawlId, result);
       }
     }).catch(error => {
       console.error('Error during crawling:', error);
-      const result = checkResults.get(crawlId);
+      const result = crawlResults.get(crawlId);
       if (result) {
         result.completed = true;
-        checkResults.set(crawlId, result);
+        crawlResults.set(crawlId, result);
       }
     });
 
@@ -656,9 +667,33 @@ const crawlUrlsHandler: express.RequestHandler = async (req, res) => {
   }
 };
 
+// Get crawl results endpoint
+const getCrawlResultsHandler: express.RequestHandler = async (req, res) => {
+  const { crawlId } = req.params;
+  
+  if (!crawlId) {
+    res.status(400).json({ error: 'Crawl ID is required' });
+    return;
+  }
+
+  const result = crawlResults.get(crawlId);
+  if (!result) {
+    res.status(404).json({ error: 'Crawl results not found' });
+    return;
+  }
+
+  res.json({
+    completed: result.completed,
+    ssl: result.ssl,
+    robotsTxt: result.robotsTxt,
+    crawledUrls: result.crawledUrls
+  });
+};
+
 router.post('/check-url', checkUrlHandler);
 router.get('/check-results/:checkId', getCheckResultsHandler);
 router.post('/crawl-urls', crawlUrlsHandler);
+router.get('/crawl-results/:crawlId', getCrawlResultsHandler);
 
 // Use the router
 app.use('/api', router);
