@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 const DEFAULT_CONFIG = {
-  waitFor: 5000,
+  waitFor: 30,
   userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
 };
 
@@ -22,11 +22,28 @@ export function ConfigPanel({ onConfigChange }) {
 
   useEffect(() => {
     localStorage.setItem('firecrawlConfig', JSON.stringify(config));
-    onConfigChange(config);
+    onConfigChange({
+      ...config,
+      waitFor: config.waitFor * 1000
+    });
   }, [config, onConfigChange]);
 
   const handleReset = () => {
     setConfig(DEFAULT_CONFIG);
+  };
+
+  const handleWaitTimeChange = (e) => {
+    const newValue = parseInt(e.target.value, 10);
+    if (newValue !== config.waitFor) {
+      const confirmed = window.confirm(
+        `Are you sure you want to change the wait time to ${newValue} seconds? This will be used for future requests.`
+      );
+      if (confirmed) {
+        setConfig(prev => ({ ...prev, waitFor: newValue }));
+      } else {
+        e.target.value = config.waitFor;
+      }
+    }
   };
 
   const handleBrowserProfileChange = (e) => {
@@ -51,17 +68,18 @@ export function ConfigPanel({ onConfigChange }) {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Wait Timeout (ms):
+                Wait Time (seconds):
                 <input
                   type="number"
-                  min="1000"
-                  max="30000"
-                  step="1000"
+                  min="1"
+                  max="60"
+                  step="1"
                   value={config.waitFor}
-                  onChange={(e) => setConfig(prev => ({ ...prev, waitFor: parseInt(e.target.value, 10) }))}
+                  onChange={handleWaitTimeChange}
                   className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </label>
+              <p className="mt-1 text-xs text-gray-500">Default: 30 seconds. Max: 60 seconds</p>
             </div>
 
             <div>
