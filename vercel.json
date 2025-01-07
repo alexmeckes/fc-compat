@@ -9,7 +9,9 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist"
+        "distDir": "dist",
+        "buildCommand": "npm run build",
+        "outputDirectory": "dist"
       }
     }
   ],
@@ -21,6 +23,10 @@
     },
     {
       "handle": "filesystem"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
     },
     {
       "src": "/(.*)",
