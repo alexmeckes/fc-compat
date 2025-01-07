@@ -1,10 +1,9 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, Router } from 'express';
 import cors from 'cors';
 import { load } from 'cheerio';
 import axios from 'axios';
 
 const app = express();
-const router = express.Router();
 
 // CORS configuration - allow all origins for now
 app.use(cors());
@@ -12,8 +11,16 @@ app.use(cors());
 // Body parser middleware
 app.use(express.json());
 
+// Create router
+const router: Router = express.Router();
+
+interface AnalyzeRequest {
+  url: string;
+  [key: string]: any;
+}
+
 // Firecrawl API endpoint
-app.post('/api/firecrawl/analyze', async (req: Request, res: Response) => {
+router.post('/api/firecrawl/analyze', async (req: Request<{}, {}, AnalyzeRequest>, res: Response) => {
   try {
     const { url, ...config } = req.body;
     
@@ -56,8 +63,8 @@ app.post('/api/firecrawl/analyze', async (req: Request, res: Response) => {
   }
 });
 
-// Use the router
-app.use('/', router);
+// Mount the router
+app.use(router);
 
 // Start the server
 const port = process.env.PORT || 3000;
