@@ -1,42 +1,61 @@
-.url-input-form {
+.url-input-container {
+  position: relative;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.url-form {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-  width: 100%;
-  max-width: 600px;
+  gap: 12px;
+  position: relative;
 }
 
 .url-input {
   flex: 1;
   padding: 12px;
-  font-size: 16px;
-  border: 2px solid #e2e8f0;
+  border: 1px solid #e2e8f0;
   border-radius: 6px;
-  outline: none;
-  transition: border-color 0.2s;
+  font-size: 1rem;
 }
 
-.url-input:focus {
-  border-color: #3b82f6;
-}
-
-.analyze-button {
+.submit-button {
+  position: relative;
   padding: 12px 24px;
-  font-size: 16px;
-  font-weight: 500;
+  background: #4299e1;
   color: white;
-  background-color: #3b82f6;
   border: none;
   border-radius: 6px;
+  font-size: 1rem;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
-.analyze-button:hover:not(:disabled) {
-  background-color: #2563eb;
+.submit-button:hover {
+  background: #3182ce;
 }
 
-.analyze-button:disabled {
-  background-color: #94a3b8;
+.submit-button:disabled {
+  background: #cbd5e0;
   cursor: not-allowed;
+}
+
+.config-toggle {
+  position: absolute;
+  top: -30px;
+  right: 0;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #4a5568;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.config-toggle:hover {
+  color: #2d3748;
+  transform: rotate(45deg);
 } 

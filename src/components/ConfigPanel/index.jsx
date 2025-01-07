@@ -42,8 +42,9 @@ export function ConfigPanel({ onConfigChange }) {
       <button 
         className="config-toggle"
         onClick={() => setIsExpanded(!isExpanded)}
+        title="Advanced Settings"
       >
-        ⚙️ Advanced Settings {isExpanded ? '▼' : '▶'}
+        ⚙️
       </button>
 
       {isExpanded && (
