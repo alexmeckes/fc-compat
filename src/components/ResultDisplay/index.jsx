@@ -46,7 +46,7 @@ export function ResultDisplay({ result }) {
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-gray-900 pb-4 border-b border-gray-200">
-          Analysis Results
+          Compatibility Analysis Results
         </h2>
 
         <div className="space-y-3">
