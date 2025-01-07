@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const cheerio = require('cheerio');
 const axios = require('axios');
+import type { Request, Response } from 'express';
+import type { AxiosError } from 'axios';
 
 const app = express();
 
@@ -11,9 +13,18 @@ app.use(cors());
 // Body parser middleware
 app.use(express.json());
 
+interface RequestBody {
+  url: string;
+  [key: string]: any;
+}
+
+interface FirecrawlErrorResponse {
+  message: string;
+}
+
 // Routes
 const routes = {
-  analyze: async (req, res) => {
+  analyze: async (req: Request<{}, {}, RequestBody>, res: Response) => {
     try {
       const { url, ...config } = req.body;
       
@@ -41,15 +52,16 @@ const routes = {
       );
 
       return res.json({ success: true, data: response.data });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error in /api/firecrawl/analyze:', error);
       if (axios.isAxiosError(error)) {
-        if (error.response?.status === 401) {
+        const axiosError = error as AxiosError<FirecrawlErrorResponse>;
+        if (axiosError.response?.status === 401) {
           return res.status(401).json({ success: false, error: 'Invalid API key' });
         }
-        return res.status(error.response?.status || 500).json({
+        return res.status(axiosError.response?.status || 500).json({
           success: false,
-          error: error.response?.data?.message || error.message
+          error: axiosError.response?.data?.message || axiosError.message
         });
       }
       return res.status(500).json({ success: false, error: 'Internal server error' });
