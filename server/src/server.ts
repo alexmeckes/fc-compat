@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import axios from 'axios';
+const axios = require('axios');
 
-export default async function handler(
+const handler = async (
   req: VercelRequest,
   res: VercelResponse
-) {
+) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -37,6 +37,8 @@ export default async function handler(
       return res.status(500).json({ success: false, error: 'Server configuration error: Missing API key' });
     }
 
+    console.log('Making request to Firecrawl with URL:', url);
+
     const response = await axios.post(
       'https://api.firecrawl.dev/scrape',
       {
@@ -51,8 +53,10 @@ export default async function handler(
       }
     );
 
+    console.log('Firecrawl response:', response.data);
+
     return res.json({ success: true, data: response.data });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in /api/firecrawl/analyze:', error);
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 401) {
@@ -65,4 +69,6 @@ export default async function handler(
     }
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }
-} 
+};
+
+module.exports = handler; 
