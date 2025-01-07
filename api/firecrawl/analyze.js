@@ -34,7 +34,7 @@ export default async function handler(req, res) {
 
   try {
     console.log('Processing POST request');
-    const { url, ...config } = req.body;
+    const { url } = req.body;
     
     if (!url) {
       console.log('URL missing from request body');
@@ -53,13 +53,15 @@ export default async function handler(req, res) {
       'https://api.firecrawl.dev/v1/scrape',
       {
         url: url.startsWith('http') ? url : `https://${url}`,
-        ...config
+        formats: ['markdown', 'html'],
+        timeout: 60000 // 60 second timeout
       },
       {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 60000 // 60 second timeout
       }
     );
 
@@ -67,10 +69,14 @@ export default async function handler(req, res) {
 
     return res.json({ success: true, data: response.data });
   } catch (error) {
-    console.error('Error:', {
+    console.error('Error details:', {
       message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
+      code: error.code,
+      response: {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      }
     });
     
     if (axios.isAxiosError(error)) {
@@ -80,7 +86,8 @@ export default async function handler(req, res) {
       return res.status(errorStatus).json({
         success: false,
         error: `API Error: ${errorMessage}`,
-        status: errorStatus
+        status: errorStatus,
+        details: error.response?.data
       });
     }
     
