@@ -11,7 +11,7 @@ function App() {
     <div className="app">
       <header className="header">
         <h1>URL Analyzer</h1>
-        <p>Enter a URL to analyze its SSL certificate and robots.txt configuration</p>
+        <p>Analyze SSL certificates and robots.txt files for any website</p>
       </header>
 
       <main className="main">
