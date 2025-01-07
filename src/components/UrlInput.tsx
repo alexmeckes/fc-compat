@@ -14,7 +14,10 @@ export default function UrlInput({ onResult }: UrlInputProps) {
     maxDepth: 2,
     maxUrls: 100,
     useFirecrawl: true,
-    skipTlsVerification: false
+    skipTlsVerification: false,
+    sitemapOnly: false,
+    ignoreSitemap: false,
+    includeSubdomains: false
   });
 
   const handleConfigChange = (key: keyof CrawlConfig, value: string | boolean) => {
@@ -135,6 +138,48 @@ export default function UrlInput({ onResult }: UrlInputProps) {
               />
               <span className="text-sm font-medium text-gray-700">
                 Skip TLS Verification
+              </span>
+            </label>
+          </div>
+
+          <div className="space-y-2">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={config.sitemapOnly}
+                onChange={(e) => handleConfigChange('sitemapOnly', e.target.checked)}
+                className="rounded text-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Only Use Sitemap
+              </span>
+            </label>
+          </div>
+
+          <div className="space-y-2">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={config.ignoreSitemap}
+                onChange={(e) => handleConfigChange('ignoreSitemap', e.target.checked)}
+                className="rounded text-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Ignore Sitemap
+              </span>
+            </label>
+          </div>
+
+          <div className="space-y-2">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={config.includeSubdomains}
+                onChange={(e) => handleConfigChange('includeSubdomains', e.target.checked)}
+                className="rounded text-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Include Subdomains
               </span>
             </label>
           </div>

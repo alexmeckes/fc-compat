@@ -1,17 +1,13 @@
 import { useState } from 'react';
-import { UrlInput, CrawlConfig } from './components/UrlInput';
+import UrlInput from './components/UrlInput';
 import { AnalysisResults } from './components/AnalysisResults';
+import { CheckResult } from './types';
 import './index.css';
 
 function App() {
-  const [analysisResult, setAnalysisResult] = useState(null);
+  const [analysisResult, setAnalysisResult] = useState<CheckResult | null>(null);
 
-  const handleAnalyze = (url: string, config: CrawlConfig) => {
-    // This will be called after the API request is complete
-    console.log('Analyzing URL:', url, 'with config:', config);
-  };
-
-  const handleResult = (result: any) => {
+  const handleResult = (result: CheckResult) => {
     setAnalysisResult(result);
   };
 
@@ -26,7 +22,7 @@ function App() {
       </header>
       <main>
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <UrlInput onAnalyze={handleAnalyze} onResult={handleResult} />
+          <UrlInput onResult={handleResult} />
           <AnalysisResults result={analysisResult} />
         </div>
       </main>
