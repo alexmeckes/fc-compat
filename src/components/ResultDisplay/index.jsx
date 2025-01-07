@@ -6,9 +6,32 @@ export function ResultDisplay({ result }) {
   const { data } = result;
   if (!data) return null;
 
+  // Determine crawlability status
+  const isCrawlable = data.success || (data.markdown && data.markdown.length > 0);
+  const hasRobotsTxt = data.robotsTxt !== undefined;
+  const isAllowedByRobots = hasRobotsTxt && !data.robotsTxt?.disallowed;
+
+  // Generate status messages
+  const crawlabilityMessage = isCrawlable 
+    ? "✅ Page content is accessible"
+    : "❌ Page content may be restricted";
+
+  const robotsMessage = hasRobotsTxt
+    ? (isAllowedByRobots ? "✅ Allowed by robots.txt" : "❌ Blocked by robots.txt")
+    : "⚠️ No robots.txt found";
+
   return (
     <div className="result-container">
       <h2 className="result-title">Analysis Results</h2>
+
+      <div className="status-card">
+        <div className={`status-indicator ${isCrawlable ? 'success' : 'error'}`}>
+          {crawlabilityMessage}
+        </div>
+        <div className={`status-indicator ${!hasRobotsTxt ? 'warning' : (isAllowedByRobots ? 'success' : 'error')}`}>
+          {robotsMessage}
+        </div>
+      </div>
       
       <div className="result-section">
         <h3>Content Preview</h3>
