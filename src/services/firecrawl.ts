@@ -41,7 +41,10 @@ export class FirecrawlService {
 
       const response = await axios.post<ScrapeResponse>(
         `${SERVER_URL}/api/firecrawl/analyze`,
-        { url: url.startsWith('http') ? url : `https://${url}` },
+        {
+          url: url.startsWith('http') ? url : `https://${url}`,
+          ...config
+        },
         {
           headers: {
             'Content-Type': 'application/json'

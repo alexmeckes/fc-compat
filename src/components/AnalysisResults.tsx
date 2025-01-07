@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { UrlList } from './UrlList';
-import { UrlCheckResult, CrawlConfig } from '../types';
+import { UrlCheckResult } from '../types';
 
 interface AnalysisResultsProps {
   result: UrlCheckResult | null;
@@ -11,31 +11,6 @@ export function AnalysisResults({ result }: AnalysisResultsProps) {
   const [urlTypeFilter, setUrlTypeFilter] = useState('all');
 
   if (!result) return null;
-
-  const statusColors = {
-    success: 'text-green-600',
-    warning: 'text-yellow-600',
-    error: 'text-red-600'
-  };
-
-  const getStatusColor = (status: keyof typeof statusColors) => statusColors[status] || 'text-gray-600';
-
-  const handleCrawl = async (initialResult: UrlCheckResult) => {
-    if (!initialResult) return;
-
-    const config: CrawlConfig = {
-      maxDepth: 2,
-      maxUrls: 100,
-      useFirecrawl: true,
-      skipTlsVerification: false,
-      sitemapOnly: false,
-      ignoreSitemap: false,
-      includeSubdomains: false
-    };
-
-    setSearchQuery('');
-    setUrlTypeFilter('all');
-  };
 
   return (
     <div className="mt-8 space-y-8">
@@ -134,9 +109,7 @@ export function AnalysisResults({ result }: AnalysisResultsProps) {
               </select>
             </div>
             <UrlList
-              title="Crawled URLs"
               urls={result.crawledUrls}
-              type="crawled"
               searchQuery={searchQuery}
               urlTypeFilter={urlTypeFilter}
             />

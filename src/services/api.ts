@@ -3,7 +3,7 @@ import { CrawlConfig, UrlCheckResult } from '../types';
 
 export async function checkUrl(url: string, config: CrawlConfig): Promise<UrlCheckResult> {
   try {
-    const response = await firecrawlService.scrapeUrl(url);
+    const response = await firecrawlService.analyzeUrl(url, config);
     
     console.log('Firecrawl response in checkUrl:', response);
 
