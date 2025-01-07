@@ -1,0 +1,42 @@
+.url-input-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.url-input {
+  flex: 1;
+  padding: 12px;
+  font-size: 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.url-input:focus {
+  border-color: #3b82f6;
+}
+
+.analyze-button {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  color: white;
+  background-color: #3b82f6;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.analyze-button:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.analyze-button:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+} 
