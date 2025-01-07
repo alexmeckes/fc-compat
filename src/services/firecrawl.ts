@@ -74,10 +74,10 @@ export class FirecrawlService {
       }
 
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error details:', {
-        name: error.name,
-        message: error.message,
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
         response: axios.isAxiosError(error) ? {
           status: error.response?.status,
           statusText: error.response?.statusText,
@@ -92,7 +92,7 @@ export class FirecrawlService {
         }
         throw new Error(`Request failed: ${error.response?.data?.message || error.message}`);
       }
-      throw error;
+      throw error instanceof Error ? error : new Error('An unknown error occurred');
     }
   }
 
