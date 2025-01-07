@@ -1,10 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import axios from 'axios';
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-) {
+// This needs to be a default export named 'handler'
+const handler = async (req: VercelRequest, res: VercelResponse) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -69,4 +67,7 @@ export default async function handler(
     }
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }
-} 
+};
+
+// Export the handler function
+export default handler; 

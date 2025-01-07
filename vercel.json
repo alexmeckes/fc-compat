@@ -16,6 +16,11 @@
   ],
   "routes": [
     {
+      "src": "/api/firecrawl/analyze",
+      "methods": ["OPTIONS", "POST"],
+      "dest": "/api/firecrawl/analyze"
+    },
+    {
       "handle": "filesystem"
     },
     {
