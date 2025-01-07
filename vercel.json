@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "server/src/server.ts",
+      "src": "api/**/*.ts",
       "use": "@vercel/node"
     },
     {
@@ -15,11 +15,6 @@
     }
   ],
   "routes": [
-    {
-      "src": "/api/firecrawl/analyze(.*)",
-      "methods": ["POST", "OPTIONS"],
-      "dest": "server/src/server.ts"
-    },
     {
       "handle": "filesystem"
     },
