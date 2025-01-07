@@ -54,14 +54,14 @@ export default async function handler(req, res) {
       {
         url: url.startsWith('http') ? url : `https://${url}`,
         formats: ['markdown', 'html'],
-        timeout: 60000 // 60 second timeout
+        timeout: 120000 // 120 second timeout
       },
       {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
-        timeout: 60000 // 60 second timeout
+        timeout: 120000 // 120 second timeout
       }
     );
 
