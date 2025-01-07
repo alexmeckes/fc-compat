@@ -1,4 +1,3 @@
-import './styles.css';
 import { useState } from 'react';
 
 export function ResultDisplay({ result }) {
@@ -44,41 +43,64 @@ export function ResultDisplay({ result }) {
   const displayedLines = isExpanded ? contentLines : contentLines.slice(0, previewLines);
 
   return (
-    <div className="result-container">
-      <h2 className="result-title">Analysis Results</h2>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-900 pb-4 border-b border-gray-200">
+        Analysis Results
+      </h2>
 
-      <div className="status-card">
-        <div className={`status-indicator ${hasCaptcha ? 'warning' : (isCrawlable ? 'success' : 'error')}`}>
+      <div className="space-y-3">
+        <div className={`p-3 rounded-lg text-center font-medium ${
+          hasCaptcha ? 'bg-yellow-50 text-yellow-800 border border-yellow-200' :
+          (isCrawlable ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200')
+        }`}>
           {crawlabilityMessage}
         </div>
-        <div className={`status-indicator ${!hasRobotsTxt ? 'warning' : (isAllowedByRobots ? 'success' : 'error')}`}>
+
+        <div className={`p-3 rounded-lg text-center font-medium ${
+          !hasRobotsTxt ? 'bg-yellow-50 text-yellow-800 border border-yellow-200' :
+          (isAllowedByRobots ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200')
+        }`}>
           {robotsMessage}
         </div>
-        <div className={`status-indicator ${!isSecure ? 'warning' : (hasValidSSL ? 'success' : 'error')}`}>
+
+        <div className={`p-3 rounded-lg text-center font-medium ${
+          !isSecure ? 'bg-yellow-50 text-yellow-800 border border-yellow-200' :
+          (hasValidSSL ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200')
+        }`}>
           {sslMessage}
         </div>
       </div>
       
       {hasCaptcha && (
-        <div className="result-section warning-section">
-          <h3>⚠️ Anti-Bot Protection Detected</h3>
-          <p>This site appears to be protected by CAPTCHA or other anti-bot measures. While some content was retrieved, it may not be the actual page content you're looking for.</p>
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <h3 className="text-lg font-medium text-yellow-800 flex items-center gap-2 mb-2">
+            ⚠️ Anti-Bot Protection Detected
+          </h3>
+          <p className="text-yellow-700">
+            This site appears to be protected by CAPTCHA or other anti-bot measures. While some content was retrieved, it may not be the actual page content you're looking for.
+          </p>
         </div>
       )}
       
-      <div className="result-section">
-        <h3>Content Preview</h3>
-        <div className="content-preview markdown">
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="p-4 bg-gray-50 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">
+            Content Preview
+          </h3>
+        </div>
+        <div className="p-4">
           {data.markdown && (
             <>
-              <div className="markdown-content">
+              <div className="prose max-w-none">
                 {displayedLines.map((line, index) => (
-                  <p key={index}>{line}</p>
+                  <p key={index} className="text-gray-700">
+                    {line}
+                  </p>
                 ))}
               </div>
               {hasMoreContent && (
                 <button 
-                  className="toggle-content-btn"
+                  className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all"
                   onClick={() => setIsExpanded(!isExpanded)}
                 >
                   {isExpanded ? 'Show Less' : `Show More (${contentLines.length - previewLines} more lines)`}
@@ -90,11 +112,21 @@ export function ResultDisplay({ result }) {
       </div>
 
       {data.links && data.links.length > 0 && (
-        <div className="result-section">
-          <h3>Discovered Links</h3>
-          <div className="links-grid">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="p-4 bg-gray-50 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">
+              Discovered Links
+            </h3>
+          </div>
+          <div className="p-4 grid gap-3 grid-cols-1 md:grid-cols-2">
             {data.links.map((link, index) => (
-              <a key={index} href={link} target="_blank" rel="noopener noreferrer" className="link-item">
+              <a
+                key={index}
+                href={link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 bg-gray-50 rounded text-blue-600 hover:text-blue-800 hover:bg-gray-100 truncate transition-all"
+              >
                 {link}
               </a>
             ))}
@@ -103,12 +135,21 @@ export function ResultDisplay({ result }) {
       )}
 
       {data.metadata && Object.keys(data.metadata).length > 0 && (
-        <div className="result-section">
-          <h3>Page Metadata</h3>
-          <div className="metadata-grid">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="p-4 bg-gray-50 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">
+              Page Metadata
+            </h3>
+          </div>
+          <div className="p-4 grid gap-3 grid-cols-1 md:grid-cols-2">
             {Object.entries(data.metadata).map(([key, value]) => (
-              <div key={key} className="metadata-item">
-                <strong>{key}:</strong> {value}
+              <div key={key} className="p-3 bg-gray-50 rounded">
+                <strong className="block text-sm font-medium text-gray-700 mb-1">
+                  {key}:
+                </strong>
+                <span className="text-gray-600 break-all">
+                  {value}
+                </span>
               </div>
             ))}
           </div>

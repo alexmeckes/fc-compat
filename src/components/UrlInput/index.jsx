@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { analyzeUrl } from '../../services/api';
 import { ConfigPanel } from '../ConfigPanel';
-import './styles.css';
 
 export function UrlInput({ onResult, onError }) {
   const [url, setUrl] = useState('');
@@ -24,22 +23,28 @@ export function UrlInput({ onResult, onError }) {
   };
 
   return (
-    <div className="url-input-container">
-      <ConfigPanel onConfigChange={setConfig} />
-      
-      <form onSubmit={handleSubmit} className="url-form">
-        <input
-          type="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="Enter URL to analyze..."
-          required
-          className="url-input"
-        />
-        <button type="submit" disabled={loading} className="submit-button">
-          {loading ? 'Analyzing...' : 'Analyze'}
-        </button>
-      </form>
+    <div className="mb-8">
+      <div className="relative">
+        <ConfigPanel onConfigChange={setConfig} />
+        
+        <form onSubmit={handleSubmit} className="flex gap-3">
+          <input
+            type="url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="Enter URL to analyze..."
+            required
+            className="flex-1 px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="px-6 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            {loading ? 'Analyzing...' : 'Analyze'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 } 

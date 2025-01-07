@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import './styles.css';
 
 const DEFAULT_CONFIG = {
   waitFor: 5000,
@@ -38,9 +37,9 @@ export function ConfigPanel({ onConfigChange }) {
   };
 
   return (
-    <div className="config-panel">
+    <div className="relative">
       <button 
-        className="config-toggle"
+        className="absolute -top-8 right-0 p-2 text-gray-600 hover:text-gray-900 transition-all hover:rotate-45"
         onClick={() => setIsExpanded(!isExpanded)}
         title="Advanced Settings"
       >
@@ -48,40 +47,47 @@ export function ConfigPanel({ onConfigChange }) {
       </button>
 
       {isExpanded && (
-        <div className="config-content">
-          <div className="config-group">
-            <label>
-              Wait Timeout (ms):
-              <input
-                type="number"
-                min="1000"
-                max="30000"
-                step="1000"
-                value={config.waitFor}
-                onChange={(e) => setConfig(prev => ({ ...prev, waitFor: parseInt(e.target.value, 10) }))}
-              />
-            </label>
-          </div>
+        <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-10">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Wait Timeout (ms):
+                <input
+                  type="number"
+                  min="1000"
+                  max="30000"
+                  step="1000"
+                  value={config.waitFor}
+                  onChange={(e) => setConfig(prev => ({ ...prev, waitFor: parseInt(e.target.value, 10) }))}
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </label>
+            </div>
 
-          <div className="config-group">
-            <label>
-              Browser Profile:
-              <select
-                value={Object.keys(BROWSER_PROFILES).find(key => BROWSER_PROFILES[key] === config.userAgent) || ''}
-                onChange={handleBrowserProfileChange}
-              >
-                {Object.keys(BROWSER_PROFILES).map(profile => (
-                  <option key={profile} value={profile}>
-                    {profile}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Browser Profile:
+                <select
+                  value={Object.keys(BROWSER_PROFILES).find(key => BROWSER_PROFILES[key] === config.userAgent) || ''}
+                  onChange={handleBrowserProfileChange}
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {Object.keys(BROWSER_PROFILES).map(profile => (
+                    <option key={profile} value={profile}>
+                      {profile}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
-          <button className="reset-btn" onClick={handleReset}>
-            Reset to Defaults
-          </button>
+            <button 
+              onClick={handleReset}
+              className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all"
+            >
+              Reset to Defaults
+            </button>
+          </div>
         </div>
       )}
     </div>
