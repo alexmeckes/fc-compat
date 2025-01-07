@@ -37,7 +37,7 @@ interface ScrapeResponse {
 export class FirecrawlService {
   async analyzeUrl(url: string, config: CrawlConfig): Promise<ScrapeResponse> {
     try {
-      const endpoint = `${SERVER_URL}/api/firecrawl/analyze`;
+      const endpoint = `${SERVER_URL}/v1/scrape`;
       const requestData = {
         url: url.startsWith('http') ? url : `https://${url}`,
         ...config
