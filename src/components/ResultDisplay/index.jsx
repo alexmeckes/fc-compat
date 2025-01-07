@@ -38,7 +38,7 @@ export function ResultDisplay({ result }) {
     : "⚠️ No SSL (HTTP only)";
 
   // Split content into lines and handle preview
-  const contentLines = data.markdown?.split('\n') || [];
+  const contentLines = data.markdown?.split('\n').filter(line => line.trim()) || [];
   const hasMoreContent = contentLines.length > previewLines;
   const displayedLines = isExpanded ? contentLines : contentLines.slice(0, previewLines);
 
@@ -89,13 +89,13 @@ export function ResultDisplay({ result }) {
           </h3>
         </div>
         <div className="p-4">
-          {data.markdown && (
+          {data.markdown ? (
             <>
-              <div className="prose max-w-none">
+              <div className="prose prose-gray max-w-none">
                 {displayedLines.map((line, index) => (
-                  <p key={index} className="text-gray-700">
+                  <div key={index} className="mb-2 last:mb-0">
                     {line}
-                  </p>
+                  </div>
                 ))}
               </div>
               {hasMoreContent && (
@@ -107,6 +107,8 @@ export function ResultDisplay({ result }) {
                 </button>
               )}
             </>
+          ) : (
+            <p className="text-gray-500 italic">No content available</p>
           )}
         </div>
       </div>

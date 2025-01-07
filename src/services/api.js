@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || '/api';
+const API_URL = '/api';
 
 export async function analyzeUrl(url, config = null) {
   try {
@@ -12,10 +12,21 @@ export async function analyzeUrl(url, config = null) {
           'User-Agent': config.userAgent
         }
       })
+    }, {
+      timeout: 30000, // 30 second timeout
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
     return response.data;
   } catch (error) {
+    if (error.code === 'ECONNABORTED') {
+      throw new Error('Request timed out. Please try again.');
+    }
+    if (error.response?.status === 504) {
+      throw new Error('Server took too long to respond. Please try again.');
+    }
     if (error.response?.data?.message) {
       throw new Error(error.response.data.message);
     }
