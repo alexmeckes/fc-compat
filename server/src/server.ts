@@ -40,7 +40,7 @@ const handler = async (
     console.log('Making request to Firecrawl with URL:', url);
 
     const response = await axios.post(
-      'https://api.firecrawl.dev/scrape',
+      'https://api.firecrawl.dev/v1/scrape',
       {
         url: url.startsWith('http') ? url : `https://${url}`,
         ...config
