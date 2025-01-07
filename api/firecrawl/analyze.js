@@ -67,22 +67,26 @@ module.exports = async function handler(req, res) {
 
     return res.json({ success: true, data: response.data });
   } catch (error) {
-    console.error('Error details:', {
-      name: error.name,
+    console.error('Error:', {
       message: error.message,
-      stack: error.stack,
-      response: error.response?.data
+      response: error.response?.data,
+      status: error.response?.status
     });
     
     if (axios.isAxiosError(error)) {
-      if (error.response?.status === 401) {
-        return res.status(401).json({ success: false, error: 'Invalid API key' });
-      }
-      return res.status(error.response?.status || 500).json({
+      const errorMessage = error.response?.data?.message || error.message;
+      const errorStatus = error.response?.status || 500;
+      
+      return res.status(errorStatus).json({
         success: false,
-        error: error.response?.data?.message || error.message
+        error: `API Error: ${errorMessage}`,
+        status: errorStatus
       });
     }
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    
+    return res.status(500).json({
+      success: false,
+      error: `Server Error: ${error.message}`
+    });
   }
 } 
