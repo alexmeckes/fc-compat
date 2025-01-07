@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { CrawlConfig } from '../types';
 
-// Server endpoint URL - adjust based on environment
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000';
+// Server endpoint URL - use production URL in production environment
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://fc-compat.vercel.app';
 
 interface ScrapeResponse {
   success: boolean;
