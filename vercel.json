@@ -16,7 +16,7 @@
   ],
   "routes": [
     {
-      "src": "/api/firecrawl/analyze",
+      "src": "/api/firecrawl/analyze(.*)",
       "methods": ["POST", "OPTIONS"],
       "dest": "server/src/server.ts"
     },
