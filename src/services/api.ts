@@ -1,18 +1,18 @@
-import { FirecrawlService } from './firecrawl';
-import { CrawlConfig, CheckResult, CheckStatus } from '../types';
+import { firecrawlService } from './firecrawl';
+import { CrawlConfig, UrlCheckResult } from '../types';
 
-export async function checkUrl(url: string, config: CrawlConfig): Promise<CheckResult> {
+export async function checkUrl(url: string, config: CrawlConfig): Promise<UrlCheckResult> {
   try {
-    const firecrawl = new FirecrawlService();
-    const response = await firecrawl.scrapeUrl(url);
+    const response = await firecrawlService.scrapeUrl(url);
     
     console.log('Firecrawl response in checkUrl:', response);
 
     if (response.error) {
       return {
-        status: 'error',
+        url,
+        isValid: false,
         error: response.error,
-        url
+        isSecure: url.startsWith('https://')
       };
     }
 
@@ -21,35 +21,21 @@ export async function checkUrl(url: string, config: CrawlConfig): Promise<CheckR
     const ssl = data.ssl;
     const robotsTxt = data.robotsTxt;
 
-    // Determine overall status
-    let status: CheckStatus = 'success';
-    let error: string | undefined;
-
-    if (statusCode >= 400) {
-      status = 'error';
-      error = `HTTP ${statusCode}`;
-    } else if (ssl && !ssl.valid) {
-      status = 'error';
-      error = ssl.error || 'SSL validation failed';
-    } else if (robotsTxt && !robotsTxt.allowed) {
-      status = 'error';
-      error = 'Access not allowed by robots.txt';
-    }
-
     return {
-      status,
-      error,
       url,
+      isValid: statusCode >= 200 && statusCode < 400,
       statusCode,
+      isSecure: url.startsWith('https://'),
       ssl,
       robotsTxt
     };
   } catch (error) {
     console.error('Error in checkUrl:', error);
     return {
-      status: 'error',
+      url,
+      isValid: false,
       error: error instanceof Error ? error.message : 'Unknown error',
-      url
+      isSecure: url.startsWith('https://')
     };
   }
 } 
