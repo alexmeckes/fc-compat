@@ -1,8 +1,7 @@
 import { VercelRequest, VercelResponse } from '../types';
 import axios from 'axios';
 
-// This needs to be a default export named 'handler'
-const handler = async (req: VercelRequest, res: VercelResponse) => {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('Request received:', {
     method: req.method,
     url: req.url,
@@ -87,7 +86,4 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
     }
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }
-};
-
-// Export the handler function
-export default handler; 
+} 
