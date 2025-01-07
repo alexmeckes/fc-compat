@@ -1,5 +1,3 @@
-import './styles.css';
-
 export function ErrorMessage({ message }) {
   if (!message) return null;
 
