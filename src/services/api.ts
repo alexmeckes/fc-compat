@@ -11,6 +11,7 @@ export async function checkUrl(url: string, config: CrawlConfig): Promise<UrlChe
       return {
         url,
         isValid: false,
+        status: 'error',
         error: response.error,
         isSecure: url.startsWith('https://')
       };
@@ -21,9 +22,20 @@ export async function checkUrl(url: string, config: CrawlConfig): Promise<UrlChe
     const ssl = data.ssl;
     const robotsTxt = data.robotsTxt;
 
+    // Determine status
+    let status: 'success' | 'error' | 'warning' = 'success';
+    if (statusCode >= 400) {
+      status = 'error';
+    } else if (ssl && !ssl.valid) {
+      status = 'error';
+    } else if (robotsTxt && !robotsTxt.allowed) {
+      status = 'warning';
+    }
+
     return {
       url,
       isValid: statusCode >= 200 && statusCode < 400,
+      status,
       statusCode,
       isSecure: url.startsWith('https://'),
       ssl,
@@ -34,6 +46,7 @@ export async function checkUrl(url: string, config: CrawlConfig): Promise<UrlChe
     return {
       url,
       isValid: false,
+      status: 'error',
       error: error instanceof Error ? error.message : 'Unknown error',
       isSecure: url.startsWith('https://')
     };

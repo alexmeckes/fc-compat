@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import UrlInput from './components/UrlInput';
 import { AnalysisResults } from './components/AnalysisResults';
-import { CheckResult } from './types';
+import { UrlCheckResult } from './types';
 import './index.css';
 
 function App() {
-  const [analysisResult, setAnalysisResult] = useState<CheckResult | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<UrlCheckResult | null>(null);
 
-  const handleResult = (result: CheckResult) => {
+  const handleResult = (result: UrlCheckResult) => {
     setAnalysisResult(result);
   };
 

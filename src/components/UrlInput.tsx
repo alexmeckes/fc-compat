@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { checkUrl } from '../services/api';
-import { CrawlConfig, CheckResult } from '../types';
+import { CrawlConfig, UrlCheckResult } from '../types';
 
 interface UrlInputProps {
-  onResult: (result: CheckResult) => void;
+  onResult: (result: UrlCheckResult) => void;
 }
 
 export default function UrlInput({ onResult }: UrlInputProps) {
@@ -36,6 +36,13 @@ export default function UrlInput({ onResult }: UrlInputProps) {
       onResult(result);
     } catch (error) {
       console.error('Error analyzing URL:', error);
+      onResult({
+        url,
+        isValid: false,
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        isSecure: url.startsWith('https://')
+      });
     } finally {
       setIsAnalyzing(false);
     }
