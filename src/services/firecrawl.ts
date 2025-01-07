@@ -37,14 +37,24 @@ interface ScrapeResponse {
 export class FirecrawlService {
   async analyzeUrl(url: string, config: CrawlConfig): Promise<ScrapeResponse> {
     try {
-      console.log('Making request to server with URL:', url);
+      const endpoint = `${SERVER_URL}/api/firecrawl/analyze`;
+      const requestData = {
+        url: url.startsWith('http') ? url : `https://${url}`,
+        ...config
+      };
+
+      console.log('Making request:', {
+        endpoint,
+        method: 'POST',
+        data: requestData,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
 
       const response = await axios.post<ScrapeResponse>(
-        `${SERVER_URL}/api/firecrawl/analyze`,
-        {
-          url: url.startsWith('http') ? url : `https://${url}`,
-          ...config
-        },
+        endpoint,
+        requestData,
         {
           headers: {
             'Content-Type': 'application/json'
@@ -52,7 +62,12 @@ export class FirecrawlService {
         }
       );
 
-      console.log('Server response:', response.data);
+      console.log('Server response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        data: response.data
+      });
       
       if (response.data.error) {
         throw new Error(response.data.error);
@@ -60,7 +75,17 @@ export class FirecrawlService {
 
       return response.data;
     } catch (error) {
-      console.error('Error in analyzeUrl:', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        response: axios.isAxiosError(error) ? {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          headers: error.response?.headers
+        } : undefined
+      });
+
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
           throw new Error('Server configuration error: Invalid or missing API key');
