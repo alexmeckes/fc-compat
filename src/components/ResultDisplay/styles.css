@@ -83,12 +83,17 @@
   background: white;
   border-radius: 4px;
   border: 1px solid #e2e8f0;
+  overflow: hidden;
+  word-wrap: break-word;
+  word-break: break-all;
 }
 
 .metadata-item strong {
   color: #4a5568;
   margin-right: 8px;
   font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
 }
 
 .status-card {
@@ -144,4 +149,23 @@
   color: #9c4221;
   margin: 0;
   font-size: 0.95rem;
+}
+
+.toggle-content-btn {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  margin-top: 12px;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  color: #4a5568;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-content-btn:hover {
+  background: #edf2f7;
+  border-color: #cbd5e0;
 } 

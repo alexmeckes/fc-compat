@@ -1,10 +1,14 @@
 import './styles.css';
+import { useState } from 'react';
 
 export function ResultDisplay({ result }) {
   if (!result) return null;
 
   const { data } = result;
   if (!data) return null;
+
+  const [isExpanded, setIsExpanded] = useState(false);
+  const previewLines = 5;
 
   // Detect CAPTCHA or anti-bot measures
   const hasCaptcha = data.markdown?.toLowerCase().includes('captcha') ||
@@ -34,6 +38,11 @@ export function ResultDisplay({ result }) {
     ? (hasValidSSL ? "✅ Valid SSL certificate" : "❌ Invalid SSL certificate")
     : "⚠️ No SSL (HTTP only)";
 
+  // Split content into lines and handle preview
+  const contentLines = data.markdown?.split('\n') || [];
+  const hasMoreContent = contentLines.length > previewLines;
+  const displayedLines = isExpanded ? contentLines : contentLines.slice(0, previewLines);
+
   return (
     <div className="result-container">
       <h2 className="result-title">Analysis Results</h2>
@@ -61,11 +70,21 @@ export function ResultDisplay({ result }) {
         <h3>Content Preview</h3>
         <div className="content-preview markdown">
           {data.markdown && (
-            <div className="markdown-content">
-              {data.markdown.split('\n').map((line, index) => (
-                <p key={index}>{line}</p>
-              ))}
-            </div>
+            <>
+              <div className="markdown-content">
+                {displayedLines.map((line, index) => (
+                  <p key={index}>{line}</p>
+                ))}
+              </div>
+              {hasMoreContent && (
+                <button 
+                  className="toggle-content-btn"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                >
+                  {isExpanded ? 'Show Less' : `Show More (${contentLines.length - previewLines} more lines)`}
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
