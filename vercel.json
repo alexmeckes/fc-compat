@@ -16,8 +16,9 @@
   ],
   "routes": [
     {
-      "src": "/api/firecrawl/analyze(.*)",
-      "dest": "/api/firecrawl/analyze"
+      "src": "/api/firecrawl/analyze",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "/api/firecrawl/analyze.ts"
     },
     {
       "handle": "filesystem"
