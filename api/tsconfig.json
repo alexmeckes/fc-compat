@@ -4,12 +4,11 @@
     "module": "CommonJS",
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "outDir": "dist",
-    "rootDir": "src",
     "strict": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "types": ["@vercel/node"]
   },
-  "include": ["src/**/*"],
+  "include": ["./**/*.ts"],
   "exclude": ["node_modules"]
 } 
