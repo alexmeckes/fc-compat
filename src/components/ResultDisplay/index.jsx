@@ -7,9 +7,6 @@ export function ResultDisplay({ result }) {
     const { data } = result;
     if (!data) return null;
 
-    const [isExpanded, setIsExpanded] = useState(false);
-    const previewLines = 5;
-
     // Detect CAPTCHA or anti-bot measures
     const hasCaptcha = data.markdown?.toLowerCase?.()?.includes('captcha') ||
       data.markdown?.toLowerCase?.()?.includes('are you a human') ||
@@ -37,11 +34,6 @@ export function ResultDisplay({ result }) {
     const sslMessage = isSecure
       ? (hasValidSSL ? "✅ Valid SSL certificate" : "❌ Invalid SSL certificate")
       : "⚠️ No SSL (HTTP only)";
-
-    // Split content into lines and handle preview
-    const contentLines = (data.markdown || '').split('\n').filter(line => line?.trim?.()) || [];
-    const hasMoreContent = contentLines.length > previewLines;
-    const displayedLines = isExpanded ? contentLines : contentLines.slice(0, previewLines);
 
     return (
       <div className="space-y-6">
@@ -91,23 +83,9 @@ export function ResultDisplay({ result }) {
           </div>
           <div className="p-4">
             {data.markdown ? (
-              <>
-                <div className="prose prose-gray max-w-none">
-                  {displayedLines.map((line, index) => (
-                    <div key={index} className="mb-2 last:mb-0">
-                      {line}
-                    </div>
-                  ))}
-                </div>
-                {hasMoreContent && (
-                  <button 
-                    className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all"
-                    onClick={() => setIsExpanded(!isExpanded)}
-                  >
-                    {isExpanded ? 'Show Less' : `Show More (${contentLines.length - previewLines} more lines)`}
-                  </button>
-                )}
-              </>
+              <div className="prose prose-gray max-w-none whitespace-pre-wrap">
+                {data.markdown}
+              </div>
             ) : (
               <p className="text-gray-500 italic">No page content available</p>
             )}
