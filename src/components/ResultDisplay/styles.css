@@ -126,4 +126,22 @@
   background-color: #fffaf0;
   color: #c05621;
   border: 1px solid #fbd38d;
+}
+
+.warning-section {
+  background-color: #fffaf0 !important;
+  border-color: #fbd38d !important;
+}
+
+.warning-section h3 {
+  color: #c05621;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.warning-section p {
+  color: #9c4221;
+  margin: 0;
+  font-size: 0.95rem;
 } 

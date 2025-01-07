@@ -6,32 +6,56 @@ export function ResultDisplay({ result }) {
   const { data } = result;
   if (!data) return null;
 
+  // Detect CAPTCHA or anti-bot measures
+  const hasCaptcha = data.markdown?.toLowerCase().includes('captcha') ||
+    data.markdown?.toLowerCase().includes('are you a human') ||
+    data.markdown?.toLowerCase().includes('bot') ||
+    data.markdown?.toLowerCase().includes('please verify');
+
   // Determine crawlability status
-  const isCrawlable = data.success || (data.markdown && data.markdown.length > 0);
+  const isCrawlable = !hasCaptcha && (data.success || (data.markdown && data.markdown.length > 0));
   const hasRobotsTxt = data.robotsTxt !== undefined;
   const isAllowedByRobots = hasRobotsTxt && !data.robotsTxt?.disallowed;
+  const isSecure = data.url?.startsWith('https://');
+  const hasValidSSL = data.ssl?.valid === true;
 
   // Generate status messages
-  const crawlabilityMessage = isCrawlable 
-    ? "✅ Page content is accessible"
-    : "❌ Page content may be restricted";
+  const crawlabilityMessage = hasCaptcha 
+    ? "⚠️ Protected by CAPTCHA/Anti-bot"
+    : (isCrawlable 
+      ? "✅ Page content is accessible"
+      : "❌ Page content may be restricted");
 
   const robotsMessage = hasRobotsTxt
     ? (isAllowedByRobots ? "✅ Allowed by robots.txt" : "❌ Blocked by robots.txt")
     : "⚠️ No robots.txt found";
+
+  const sslMessage = isSecure
+    ? (hasValidSSL ? "✅ Valid SSL certificate" : "❌ Invalid SSL certificate")
+    : "⚠️ No SSL (HTTP only)";
 
   return (
     <div className="result-container">
       <h2 className="result-title">Analysis Results</h2>
 
       <div className="status-card">
-        <div className={`status-indicator ${isCrawlable ? 'success' : 'error'}`}>
+        <div className={`status-indicator ${hasCaptcha ? 'warning' : (isCrawlable ? 'success' : 'error')}`}>
           {crawlabilityMessage}
         </div>
         <div className={`status-indicator ${!hasRobotsTxt ? 'warning' : (isAllowedByRobots ? 'success' : 'error')}`}>
           {robotsMessage}
         </div>
+        <div className={`status-indicator ${!isSecure ? 'warning' : (hasValidSSL ? 'success' : 'error')}`}>
+          {sslMessage}
+        </div>
       </div>
+      
+      {hasCaptcha && (
+        <div className="result-section warning-section">
+          <h3>⚠️ Anti-Bot Protection Detected</h3>
+          <p>This site appears to be protected by CAPTCHA or other anti-bot measures. While some content was retrieved, it may not be the actual page content you're looking for.</p>
+        </div>
+      )}
       
       <div className="result-section">
         <h3>Content Preview</h3>
