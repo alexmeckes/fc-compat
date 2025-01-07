@@ -35,6 +35,11 @@ export function ResultDisplay({ result }) {
       ? (hasValidSSL ? "✅ Valid SSL certificate" : "❌ Invalid SSL certificate")
       : "⚠️ No SSL (HTTP only)";
 
+    // For debugging
+    console.log('Result data:', result);
+    console.log('Content:', data.content);
+    console.log('Markdown:', data.markdown);
+
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-gray-900 pb-4 border-b border-gray-200">
@@ -82,9 +87,9 @@ export function ResultDisplay({ result }) {
             </h3>
           </div>
           <div className="p-4">
-            {data.markdown ? (
+            {(data.content || data.markdown) ? (
               <div className="prose prose-gray max-w-none whitespace-pre-wrap">
-                {data.markdown}
+                {data.content || data.markdown}
               </div>
             ) : (
               <p className="text-gray-500 italic">No page content available</p>
@@ -139,6 +144,7 @@ export function ResultDisplay({ result }) {
       </div>
     );
   } catch (error) {
+    console.error('Error in ResultDisplay:', error);
     return (
       <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
         <h3 className="text-lg font-medium text-red-800">Error Displaying Results</h3>
