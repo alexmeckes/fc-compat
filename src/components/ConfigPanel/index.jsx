@@ -17,7 +17,15 @@ export function ConfigPanel({ onConfigChange }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [config, setConfig] = useState(() => {
     const savedConfig = localStorage.getItem('firecrawlConfig');
-    return savedConfig ? JSON.parse(savedConfig) : DEFAULT_CONFIG;
+    if (savedConfig) {
+      const parsed = JSON.parse(savedConfig);
+      // Ensure saved wait time is within limits
+      return {
+        ...parsed,
+        waitFor: Math.min(Math.max(parsed.waitFor, 1), 60)
+      };
+    }
+    return DEFAULT_CONFIG;
   });
 
   useEffect(() => {
@@ -33,7 +41,7 @@ export function ConfigPanel({ onConfigChange }) {
   };
 
   const handleWaitTimeChange = (e) => {
-    const newValue = parseInt(e.target.value, 10);
+    const newValue = Math.min(Math.max(parseInt(e.target.value, 10) || 1, 1), 60);
     if (newValue !== config.waitFor) {
       const confirmed = window.confirm(
         `Are you sure you want to change the wait time to ${newValue} seconds? This will be used for future requests.`
