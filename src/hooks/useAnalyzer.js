@@ -12,8 +12,12 @@ export function useAnalyzer() {
     setResult(null);
 
     try {
-      const data = await analyzeUrl(url);
-      setResult(data.data);
+      const response = await analyzeUrl(url);
+      if (response.success && response.data) {
+        setResult(response.data);
+      } else {
+        throw new Error('Invalid response format');
+      }
     } catch (err) {
       setError(err.message);
     } finally {
