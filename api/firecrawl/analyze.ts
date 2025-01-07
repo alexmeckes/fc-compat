@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { VercelRequest, VercelResponse } from '../types';
 import axios from 'axios';
 
 // This needs to be a default export named 'handler'
