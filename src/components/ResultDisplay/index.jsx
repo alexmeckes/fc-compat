@@ -109,7 +109,7 @@ export function ResultDisplay({ result }) {
                 )}
               </>
             ) : (
-              <p className="text-gray-500 italic">No content available</p>
+              <p className="text-gray-500 italic">No page content available</p>
             )}
           </div>
         </div>
