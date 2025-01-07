@@ -3,7 +3,7 @@ import cors from 'cors';
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import { URL } from 'url';
 import { connect } from 'tls';
-import * as cheerio from 'cheerio';
+import { load } from 'cheerio';
 
 const app = express();
 const router = Router();
@@ -361,9 +361,9 @@ function shouldCrawlUrl(url: string, baseUrl: string, config: CrawlConfig): bool
 // Helper function to discover links in HTML
 function discoverLinks(html: string, baseUrl: string, config: CrawlConfig): string[] {
   const links: string[] = [];
-  const $ = cheerio.load(html);
+  const $ = load(html);
   
-  $('a[href]').each((_index: number, element: cheerio.Element) => {
+  $('a[href]').each((_, element) => {
     try {
       const href = $(element).attr('href');
       if (!href) return;
@@ -392,10 +392,17 @@ async function fetchSitemap(url: string, config: CrawlConfig): Promise<string[]>
       }
     });
     
-    const $ = cheerio.load(response.data, { xmlMode: true });
-    const urls = $('loc').map((_index: number, element: cheerio.Element) => $(element).text()).get();
+    const $ = load(response.data, { xmlMode: true });
+    const urls: string[] = [];
     
-    return urls.filter((url: string) => shouldCrawlUrl(url, url, config));
+    $('loc').each((_, element) => {
+      const url = $(element).text();
+      if (shouldCrawlUrl(url, url, config)) {
+        urls.push(url);
+      }
+    });
+    
+    return urls;
   } catch {
     return [];
   }
@@ -742,6 +749,10 @@ router.get('/check-results/:checkId', getCheckResultsHandler);
 router.post('/crawl-urls', crawlUrlsHandler);
 router.get('/crawl-results/:crawlId', getCrawlResultsHandler);
 
+// Use the router
+app.use('/', router);
+
+// Start the server
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 }); 
