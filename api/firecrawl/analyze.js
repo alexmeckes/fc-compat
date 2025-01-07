@@ -54,7 +54,10 @@ export default async function handler(req, res) {
       {
         url: url.startsWith('http') ? url : `https://${url}`,
         formats: ['markdown', 'html'],
-        timeout: 120000 // 120 second timeout
+        onlyMainContent: true, // Only get the main content, excluding headers/footers
+        timeout: 120000, // 120 second timeout
+        waitFor: 2000, // Wait 2 seconds for dynamic content to load
+        removeBase64Images: true // Remove base64 images to reduce response size
       },
       {
         headers: {
