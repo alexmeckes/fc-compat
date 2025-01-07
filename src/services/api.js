@@ -1,15 +1,24 @@
 import axios from 'axios';
 
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+const API_URL = process.env.REACT_APP_API_URL || '/api';
 
-export const analyzeUrl = async (url) => {
+export async function analyzeUrl(url, config = null) {
   try {
-    const response = await axios.post(`${API_URL}/api/firecrawl/analyze`, { url });
+    const response = await axios.post(`${API_URL}/firecrawl/analyze`, {
+      url,
+      ...(config && {
+        waitFor: config.waitFor,
+        headers: {
+          'User-Agent': config.userAgent
+        }
+      })
+    });
+
     return response.data;
   } catch (error) {
-    if (error.response?.data?.error) {
-      throw new Error(error.response.data.error);
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
     }
-    throw new Error('Failed to analyze URL');
+    throw new Error('Failed to analyze URL. Please try again.');
   }
-}; 
+} 
