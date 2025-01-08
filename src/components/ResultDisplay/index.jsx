@@ -83,6 +83,7 @@ export function ResultDisplay({ result, config }) {
       }
       const text = content.toString();
       console.log('Content length:', text.length);
+      console.log('Content sample:', text.substring(0, 100));
       if (!isExpanded && text.length > maxPreviewLength) {
         return text.slice(0, maxPreviewLength) + '...';
       }
@@ -168,19 +169,19 @@ export function ResultDisplay({ result, config }) {
           </div>
         )}
         
-        {(data.content || data.markdown) && (
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <div className="p-4 bg-gray-50 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">
-                Content Preview
-              </h3>
-            </div>
-            <div className="p-4">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="p-4 bg-gray-50 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">
+              Content Preview
+            </h3>
+          </div>
+          <div className="p-4">
+            {data.markdown ? (
               <div>
                 <div className="prose prose-gray max-w-none whitespace-pre-wrap">
-                  {formatContent(data.content || data.markdown)}
+                  {formatContent(data.markdown)}
                 </div>
-                {(data.content || data.markdown)?.length > maxPreviewLength && (
+                {data.markdown.length > maxPreviewLength && (
                   <button 
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all"
@@ -189,9 +190,11 @@ export function ResultDisplay({ result, config }) {
                   </button>
                 )}
               </div>
-            </div>
+            ) : (
+              <p className="text-gray-500 italic">No page content available</p>
+            )}
           </div>
-        )}
+        </div>
 
         {data.links?.length > 0 && (
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
