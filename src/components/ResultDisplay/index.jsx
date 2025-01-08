@@ -46,6 +46,20 @@ export function ResultDisplay({ result }) {
       ? (hasValidSSL ? "✅ Valid SSL certificate" : "❌ Invalid SSL certificate")
       : "⚠️ No SSL (HTTP only)";
 
+    // Add these near the top of the component, after the initial data checks
+    const [isExpanded, setIsExpanded] = useState(false);
+    const maxPreviewLength = 500; // Show first 500 characters by default
+    
+    // Add this helper function inside the component
+    const formatContent = (content) => {
+      if (!content) return '';
+      const text = content.toString();
+      if (!isExpanded && text.length > maxPreviewLength) {
+        return text.slice(0, maxPreviewLength) + '...';
+      }
+      return text;
+    };
+
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-gray-900 pb-4 border-b border-gray-200">
@@ -94,8 +108,18 @@ export function ResultDisplay({ result }) {
           </div>
           <div className="p-4">
             {(data.content || data.markdown) ? (
-              <div className="prose prose-gray max-w-none whitespace-pre-wrap">
-                {data.content || data.markdown}
+              <div>
+                <div className="prose prose-gray max-w-none whitespace-pre-wrap">
+                  {formatContent(data.content || data.markdown)}
+                </div>
+                {(data.content || data.markdown)?.length > maxPreviewLength && (
+                  <button 
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all"
+                  >
+                    {isExpanded ? 'Show Less' : 'Show More'}
+                  </button>
+                )}
               </div>
             ) : (
               <p className="text-gray-500 italic">No page content available</p>
