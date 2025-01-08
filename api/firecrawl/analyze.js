@@ -49,15 +49,22 @@ export default async function handler(req, res) {
 
     console.log('Making request to Firecrawl with URL:', url);
     const startTime = new Date();
+    console.log('Wait time received:', waitFor);
 
     const requestConfig = {
       url: url.startsWith('http') ? url : `https://${url}`,
       formats: ['markdown', 'html'],
-      timeout: Math.max(120000, waitFor + 60000), // At least 120 seconds or wait time + 60 seconds
+      timeout: 180000, // 3 minute timeout (180 seconds)
       waitFor: typeof waitFor === 'number' ? waitFor : 30000, // Use provided wait time or default to 30 seconds
       removeBase64Images: removeBase64Images !== undefined ? removeBase64Images : true,
       onlyMainContent: onlyMainContent !== undefined ? onlyMainContent : true,
     };
+
+    console.log('Request config:', {
+      timeout: requestConfig.timeout,
+      waitFor: requestConfig.waitFor,
+      url: requestConfig.url
+    });
 
     // Add mobile emulation if enabled
     if (emulateMobile) {
@@ -94,7 +101,7 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
           ...(userAgent && !emulateMobile && { 'User-Agent': userAgent }) // Only use custom user agent if not emulating mobile
         },
-        timeout: Math.max(120000, waitFor + 60000) // Match the request config timeout
+        timeout: 180000 // 3 minute timeout (180 seconds)
       }
     );
 
