@@ -6,16 +6,12 @@ export function ResultDisplay({ result, config }) {
     if (!result) return null;
 
     // Handle nested data structure
-    const { data: responseData } = result;
-    console.log('Full response data:', responseData);
-    
-    const { data } = responseData;
-    console.log('Nested data object:', data);
+    const { data } = result;
+    console.log('Response data:', data);
 
     if (!data) return null;
 
     // For debugging
-    console.log('Nested data:', data);
     console.log('Content:', data.content);
     console.log('Markdown:', data.markdown);
 

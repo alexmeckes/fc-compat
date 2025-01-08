@@ -48,6 +48,7 @@ export default async function handler(req, res) {
     }
 
     console.log('Making request to Firecrawl with URL:', url);
+    const startTime = new Date();
 
     const requestConfig = {
       url: url.startsWith('http') ? url : `https://${url}`,
@@ -97,9 +98,18 @@ export default async function handler(req, res) {
       }
     );
 
+    const endTime = new Date();
     console.log('Firecrawl response:', response.data);
 
-    return res.json({ success: true, data: response.data });
+    // Add timing information and original URL to the response
+    const responseData = {
+      ...response.data,
+      url: requestConfig.url,
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString()
+    };
+
+    return res.json({ success: true, data: responseData });
   } catch (error) {
     console.error('Error details:', {
       message: error.message,
