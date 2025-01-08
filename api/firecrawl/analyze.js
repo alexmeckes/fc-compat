@@ -51,11 +51,18 @@ export default async function handler(req, res) {
     const startTime = new Date();
     console.log('Wait time received:', waitFor);
 
+    // Ensure waitFor is a valid number and within bounds
+    const validatedWaitFor = typeof waitFor === 'number' && !isNaN(waitFor) 
+      ? Math.min(Math.max(waitFor, 1000), 60000) 
+      : 5000;
+
+    console.log('Using wait time:', validatedWaitFor);
+
     const requestConfig = {
       url: url.startsWith('http') ? url : `https://${url}`,
       formats: ['markdown', 'html'],
       timeout: 180000, // 3 minute timeout (180 seconds)
-      waitFor: typeof waitFor === 'number' ? waitFor : 5000, // Use provided wait time or default to 5 seconds
+      waitFor: validatedWaitFor, // Use validated wait time
       removeBase64Images: removeBase64Images !== undefined ? removeBase64Images : true,
       onlyMainContent: onlyMainContent !== undefined ? onlyMainContent : true,
     };

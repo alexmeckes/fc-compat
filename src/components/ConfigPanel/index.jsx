@@ -23,22 +23,34 @@ export function ConfigPanel({ onConfigChange }) {
   const [config, setConfig] = useState(() => {
     const savedConfig = localStorage.getItem('firecrawlConfig');
     if (savedConfig) {
-      const parsed = JSON.parse(savedConfig);
-      return {
-        ...DEFAULT_CONFIG,
-        ...parsed,
-        waitFor: Math.min(Math.max(parsed.waitFor || DEFAULT_CONFIG.waitFor, 1000), 60000) // Ensure valid milliseconds
-      };
+      try {
+        const parsed = JSON.parse(savedConfig);
+        const validatedConfig = {
+          ...DEFAULT_CONFIG,
+          ...parsed,
+          waitFor: Math.min(Math.max(parsed.waitFor || DEFAULT_CONFIG.waitFor, 1000), 60000) // Ensure valid milliseconds
+        };
+        // Immediately notify parent of loaded config
+        setTimeout(() => onConfigChange(validatedConfig), 0);
+        return validatedConfig;
+      } catch (error) {
+        console.error('Error loading saved config:', error);
+        // Immediately notify parent of default config
+        setTimeout(() => onConfigChange(DEFAULT_CONFIG), 0);
+        return DEFAULT_CONFIG;
+      }
     }
+    // Immediately notify parent of default config
+    setTimeout(() => onConfigChange(DEFAULT_CONFIG), 0);
     return DEFAULT_CONFIG;
   });
   const [tempConfig, setTempConfig] = useState(config);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Send initial config
+  // Ensure config changes are propagated
   useEffect(() => {
     onConfigChange(config);
-  }, []);
+  }, [config]);
 
   useEffect(() => {
     setTempConfig(config);
