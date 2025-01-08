@@ -7,7 +7,7 @@ export async function analyzeUrl(url, config = null) {
     const response = await axios.post(`${API_URL}/firecrawl/analyze`, {
       url,
       ...(config && {
-        waitFor: config.waitFor || 30000, // Default 30 seconds if not specified
+        waitFor: config.waitFor || 1000, // Default 1 second if not specified
         userAgent: config.userAgent,
         removeBase64Images: config.removeBase64Images,
         onlyMainContent: config.onlyMainContent,
@@ -16,7 +16,7 @@ export async function analyzeUrl(url, config = null) {
         emulateMobile: config.emulateMobile,
       })
     }, {
-      timeout: (config?.waitFor || 30000) + 5000, // Add 5 seconds to wait time for buffer
+      timeout: (config?.waitFor || 1000) + 5000, // Add 5 seconds to wait time for buffer
       headers: {
         'Content-Type': 'application/json'
       }
