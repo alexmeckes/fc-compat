@@ -83,6 +83,7 @@ export function ResultDisplay({ result, config }) {
 
     // Add these near the top of the component, after the initial data checks
     const [isExpanded, setIsExpanded] = useState(false);
+    const [copySuccess, setCopySuccess] = useState(false);
     const maxPreviewLength = 500; // Show first 500 characters by default
     
     // Add this helper function inside the component
@@ -99,6 +100,18 @@ export function ResultDisplay({ result, config }) {
         return text.slice(0, maxPreviewLength) + '...';
       }
       return text;
+    };
+
+    const handleCopyContent = () => {
+      const contentToCopy = data.content?.length > 0 ? data.content : data.markdown;
+      if (contentToCopy) {
+        navigator.clipboard.writeText(contentToCopy)
+          .then(() => {
+            setCopySuccess(true);
+            setTimeout(() => setCopySuccess(false), 2000); // Reset after 2 seconds
+          })
+          .catch(err => console.error('Failed to copy content:', err));
+      }
     };
 
     return (
@@ -181,10 +194,21 @@ export function ResultDisplay({ result, config }) {
         )}
         
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div className="p-4 bg-gray-50 border-b border-gray-200">
+          <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
               Content Preview
             </h3>
+            <button
+              onClick={handleCopyContent}
+              className={`p-2 rounded-md transition-all ${
+                copySuccess 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+              title="Copy content"
+            >
+              {copySuccess ? '✓ Copied!' : '📋'}
+            </button>
           </div>
           <div className="p-4">
             {(data.content?.length > 0 || data.markdown?.length > 0) ? (
