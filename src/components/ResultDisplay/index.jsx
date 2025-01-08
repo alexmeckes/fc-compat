@@ -5,7 +5,12 @@ export function ResultDisplay({ result }) {
     if (!result) return null;
 
     // Handle nested data structure
-    const { data: { data } } = result;
+    const { data: responseData } = result;
+    console.log('Full response data:', responseData);
+    
+    const { data } = responseData;
+    console.log('Nested data object:', data);
+
     if (!data) return null;
 
     // For debugging
