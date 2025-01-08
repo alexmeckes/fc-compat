@@ -55,7 +55,7 @@ export default async function handler(req, res) {
       url: url.startsWith('http') ? url : `https://${url}`,
       formats: ['markdown', 'html'],
       timeout: 180000, // 3 minute timeout (180 seconds)
-      waitFor: typeof waitFor === 'number' ? waitFor : 30000, // Use provided wait time or default to 30 seconds
+      waitFor: typeof waitFor === 'number' ? waitFor : 5000, // Use provided wait time or default to 5 seconds
       removeBase64Images: removeBase64Images !== undefined ? removeBase64Images : true,
       onlyMainContent: onlyMainContent !== undefined ? onlyMainContent : true,
     };
