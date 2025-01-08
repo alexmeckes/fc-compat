@@ -35,8 +35,8 @@ export function ResultDisplay({ result, config }) {
         'Remove Base64 Images': config.removeBase64Images ? 'Yes' : 'No',
         'Only Main Content': config.onlyMainContent ? 'Yes' : 'No',
         'Mobile Emulation': config.emulateMobile ? 'Yes' : 'No',
-        'Include Tags': config.includeTags?.length ? config.includeTags.join(', ') : 'None',
-        'Exclude Tags': config.excludeTags?.length ? config.excludeTags.join(', ') : 'None',
+        'Include Tags': config.includeTags?.length ? config.includeTags.split(',').map(tag => tag.trim()).join(', ') : 'None',
+        'Exclude Tags': config.excludeTags?.length ? config.excludeTags.split(',').map(tag => tag.trim()).join(', ') : 'None',
       };
       console.log('Formatted config:', formatted);
       return formatted;

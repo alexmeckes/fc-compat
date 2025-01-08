@@ -113,7 +113,12 @@ export default async function handler(req, res) {
       ...response.data,
       url: requestConfig.url,
       startTime: startTime.toISOString(),
-      endTime: endTime.toISOString()
+      endTime: endTime.toISOString(),
+      // Ensure these fields exist
+      content: response.data.content || response.data.markdown || '',
+      markdown: response.data.markdown || response.data.content || '',
+      ssl: response.data.ssl || { valid: response.data.url?.startsWith('https://') },
+      robotsTxt: response.data.robotsTxt || { exists: false, disallowed: false }
     };
 
     console.log('Final response data:', responseData);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 const DEFAULT_CONFIG = {
-  waitFor: 30,
+  waitFor: 30000, // 30 seconds in milliseconds
   userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   removeBase64Images: true,
   onlyMainContent: true,
@@ -27,13 +27,18 @@ export function ConfigPanel({ onConfigChange }) {
       return {
         ...DEFAULT_CONFIG,
         ...parsed,
-        waitFor: Math.min(Math.max(parsed.waitFor, 1), 60)
+        waitFor: Math.min(Math.max(parsed.waitFor, 1000), 60000) // Convert to milliseconds
       };
     }
     return DEFAULT_CONFIG;
   });
   const [tempConfig, setTempConfig] = useState(config);
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Send initial config
+  useEffect(() => {
+    onConfigChange(config);
+  }, []);
 
   useEffect(() => {
     setTempConfig(config);
@@ -42,18 +47,13 @@ export function ConfigPanel({ onConfigChange }) {
   const handleSave = () => {
     const validatedConfig = {
       ...tempConfig,
-      waitFor: Math.min(Math.max(tempConfig.waitFor, 1), 60),
+      waitFor: Math.min(Math.max(tempConfig.waitFor, 1000), 60000), // Convert to milliseconds
       includeTags: tempConfig.includeTags.trim(),
       excludeTags: tempConfig.excludeTags.trim(),
     };
     setConfig(validatedConfig);
     localStorage.setItem('firecrawlConfig', JSON.stringify(validatedConfig));
-    onConfigChange({
-      ...validatedConfig,
-      waitFor: validatedConfig.waitFor * 1000,
-      includeTags: validatedConfig.includeTags ? validatedConfig.includeTags.split(',').map(tag => tag.trim()) : [],
-      excludeTags: validatedConfig.excludeTags ? validatedConfig.excludeTags.split(',').map(tag => tag.trim()) : [],
-    });
+    onConfigChange(validatedConfig);
     setHasChanges(false);
     setIsExpanded(false);
   };
@@ -67,7 +67,7 @@ export function ConfigPanel({ onConfigChange }) {
     const newValue = parseInt(e.target.value, 10);
     setTempConfig(prev => ({ 
       ...prev, 
-      waitFor: isNaN(newValue) ? DEFAULT_CONFIG.waitFor : newValue 
+      waitFor: (isNaN(newValue) ? DEFAULT_CONFIG.waitFor : newValue) * 1000 // Convert to milliseconds
     }));
     setHasChanges(true);
   };
