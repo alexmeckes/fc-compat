@@ -113,32 +113,32 @@ export default async function handler(req, res) {
     );
 
     const endTime = new Date();
-    console.log('Firecrawl raw response:', response.data);
-    console.log('SSL info:', response.data.ssl);
-    console.log('Content info:', {
-      hasContent: !!response.data.content,
-      contentLength: response.data.content?.length,
-      hasMarkdown: !!response.data.markdown,
-      markdownLength: response.data.markdown?.length,
-      contentSample: response.data.content?.substring(0, 100),
-      markdownSample: response.data.markdown?.substring(0, 100)
+    console.log('Firecrawl raw response:', {
+      success: response.data.success,
+      hasContent: !!response.data.data?.content,
+      hasMarkdown: !!response.data.data?.markdown,
+      contentSample: response.data.data?.content?.substring(0, 100),
+      markdownSample: response.data.data?.markdown?.substring(0, 100),
+      data: response.data
     });
 
     // Add timing information and original URL to the response
     const responseData = {
-      ...response.data,
+      success: response.data.success,
       url: requestConfig.url,
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
-      // Ensure these fields exist and are not empty
-      content: response.data.content || response.data.markdown || '',
-      markdown: response.data.markdown || response.data.content || '',
-      ssl: response.data.ssl || { valid: response.data.url?.startsWith('https://') },
-      robotsTxt: response.data.robotsTxt || { exists: false, disallowed: false }
+      content: response.data.data?.content || '',
+      markdown: response.data.data?.markdown || '',
+      ssl: response.data.data?.ssl || { valid: requestConfig.url.startsWith('https://') },
+      robotsTxt: response.data.data?.robotsTxt || { exists: false, disallowed: false },
+      links: response.data.data?.links || []
     };
 
     console.log('Final response data:', {
-      ...responseData,
+      success: responseData.success,
+      hasContent: !!responseData.content,
+      hasMarkdown: !!responseData.markdown,
       contentLength: responseData.content?.length,
       markdownLength: responseData.markdown?.length,
       contentSample: responseData.content?.substring(0, 100),
