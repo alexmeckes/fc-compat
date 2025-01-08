@@ -16,7 +16,7 @@ export async function analyzeUrl(url, config = null) {
         emulateMobile: config.emulateMobile,
       })
     }, {
-      timeout: (config?.waitFor || 1000) + 5000, // Add 5 seconds to wait time for buffer
+      timeout: Math.min((config?.waitFor || 1000) + 180000, 240000), // Add 3 minutes to wait time, max 4 minutes total
       headers: {
         'Content-Type': 'application/json'
       }

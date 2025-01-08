@@ -108,7 +108,7 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
           ...(userAgent && !emulateMobile && { 'User-Agent': userAgent }) // Only use custom user agent if not emulating mobile
         },
-        timeout: 180000 // 3 minute timeout (180 seconds)
+        timeout: Math.min(validatedWaitFor + 180000, 240000) // Add 3 minutes to wait time, max 4 minutes total
       }
     );
 
