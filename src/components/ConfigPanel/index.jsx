@@ -27,7 +27,7 @@ export function ConfigPanel({ onConfigChange }) {
       return {
         ...DEFAULT_CONFIG,
         ...parsed,
-        waitFor: Math.min(Math.max(parsed.waitFor, 1000), 60000) // Convert to milliseconds
+        waitFor: Math.min(Math.max(parsed.waitFor || DEFAULT_CONFIG.waitFor, 1000), 60000) // Ensure valid milliseconds
       };
     }
     return DEFAULT_CONFIG;
@@ -47,7 +47,7 @@ export function ConfigPanel({ onConfigChange }) {
   const handleSave = () => {
     const validatedConfig = {
       ...tempConfig,
-      waitFor: Math.min(Math.max(tempConfig.waitFor, 1000), 60000), // Convert to milliseconds
+      waitFor: Math.min(Math.max(tempConfig.waitFor, 1000), 60000), // Ensure valid milliseconds
       includeTags: tempConfig.includeTags.trim(),
       excludeTags: tempConfig.excludeTags.trim(),
     };
@@ -64,10 +64,10 @@ export function ConfigPanel({ onConfigChange }) {
   };
 
   const handleWaitTimeChange = (e) => {
-    const newValue = parseInt(e.target.value, 10);
+    const seconds = parseInt(e.target.value, 10);
     setTempConfig(prev => ({ 
       ...prev, 
-      waitFor: (isNaN(newValue) ? DEFAULT_CONFIG.waitFor : newValue) * 1000 // Convert to milliseconds
+      waitFor: (isNaN(seconds) ? DEFAULT_CONFIG.waitFor : seconds * 1000) // Convert seconds to milliseconds
     }));
     setHasChanges(true);
   };
@@ -107,22 +107,21 @@ export function ConfigPanel({ onConfigChange }) {
       </button>
 
       {isExpanded && (
-        <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-10">
+        <div className="absolute right-0 top-2 z-10 mt-8 w-96 rounded-lg bg-white p-4 shadow-lg ring-1 ring-black ring-opacity-5">
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Wait Time (seconds):
                 <input
                   type="number"
+                  value={tempConfig.waitFor / 1000} // Convert milliseconds to seconds for display
+                  onChange={handleWaitTimeChange}
                   min="1"
                   max="60"
-                  step="1"
-                  value={tempConfig.waitFor}
-                  onChange={handleWaitTimeChange}
                   className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </label>
-              <p className="mt-1 text-xs text-gray-500">Default: 30 seconds. Max: 60 seconds</p>
+              <p className="text-xs text-gray-500 mt-1">Default: 30 seconds. Max: 60 seconds</p>
             </div>
 
             <div>

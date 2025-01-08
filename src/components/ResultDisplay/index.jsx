@@ -13,8 +13,8 @@ export function ResultDisplay({ result, config }) {
     if (!data) return null;
 
     // For debugging
-    console.log('Content:', data.content);
-    console.log('Markdown:', data.markdown);
+    console.log('Raw content:', data.content);
+    console.log('Raw markdown:', data.markdown);
     console.log('SSL data:', data.ssl);
 
     // Calculate runtime in seconds
@@ -76,8 +76,13 @@ export function ResultDisplay({ result, config }) {
     
     // Add this helper function inside the component
     const formatContent = (content) => {
-      if (!content) return '';
+      console.log('Formatting content:', content);
+      if (!content) {
+        console.log('No content to format');
+        return '';
+      }
       const text = content.toString();
+      console.log('Content length:', text.length);
       if (!isExpanded && text.length > maxPreviewLength) {
         return text.slice(0, maxPreviewLength) + '...';
       }
@@ -163,14 +168,14 @@ export function ResultDisplay({ result, config }) {
           </div>
         )}
         
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div className="p-4 bg-gray-50 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">
-              Content Preview
-            </h3>
-          </div>
-          <div className="p-4">
-            {(data.content || data.markdown) ? (
+        {(data.content || data.markdown) && (
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className="p-4 bg-gray-50 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">
+                Content Preview
+              </h3>
+            </div>
+            <div className="p-4">
               <div>
                 <div className="prose prose-gray max-w-none whitespace-pre-wrap">
                   {formatContent(data.content || data.markdown)}
@@ -184,11 +189,9 @@ export function ResultDisplay({ result, config }) {
                   </button>
                 )}
               </div>
-            ) : (
-              <p className="text-gray-500 italic">No page content available</p>
-            )}
+            </div>
           </div>
-        </div>
+        )}
 
         {data.links?.length > 0 && (
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">

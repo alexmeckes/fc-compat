@@ -105,7 +105,9 @@ export default async function handler(req, res) {
       hasContent: !!response.data.content,
       contentLength: response.data.content?.length,
       hasMarkdown: !!response.data.markdown,
-      markdownLength: response.data.markdown?.length
+      markdownLength: response.data.markdown?.length,
+      contentSample: response.data.content?.substring(0, 100),
+      markdownSample: response.data.markdown?.substring(0, 100)
     });
 
     // Add timing information and original URL to the response
@@ -114,14 +116,20 @@ export default async function handler(req, res) {
       url: requestConfig.url,
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
-      // Ensure these fields exist
+      // Ensure these fields exist and are not empty
       content: response.data.content || response.data.markdown || '',
       markdown: response.data.markdown || response.data.content || '',
       ssl: response.data.ssl || { valid: response.data.url?.startsWith('https://') },
       robotsTxt: response.data.robotsTxt || { exists: false, disallowed: false }
     };
 
-    console.log('Final response data:', responseData);
+    console.log('Final response data:', {
+      ...responseData,
+      contentLength: responseData.content?.length,
+      markdownLength: responseData.markdown?.length,
+      contentSample: responseData.content?.substring(0, 100),
+      markdownSample: responseData.markdown?.substring(0, 100)
+    });
 
     return res.json({ success: true, data: responseData });
   } catch (error) {
