@@ -6,10 +6,12 @@ import { ErrorMessage } from './components/ErrorMessage';
 function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [lastConfig, setLastConfig] = useState(null);
 
-  const handleResult = (data) => {
+  const handleResult = (data, config) => {
     setError(null);
     setResult(data);
+    setLastConfig(config);
   };
 
   const handleError = (message) => {
@@ -28,7 +30,7 @@ function App() {
           onError={handleError}
         />
         {error && <ErrorMessage message={error} />}
-        {result && <ResultDisplay result={result} />}
+        {result && <ResultDisplay result={result} config={lastConfig} />}
       </div>
     </div>
   );

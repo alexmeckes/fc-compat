@@ -14,7 +14,7 @@ export function UrlInput({ onResult, onError }) {
     setLoading(true);
     try {
       const result = await analyzeUrl(url, config);
-      onResult(result);
+      onResult(result, config);
     } catch (error) {
       onError(error.message);
     } finally {

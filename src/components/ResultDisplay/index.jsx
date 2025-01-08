@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { BROWSER_PROFILES } from '../ConfigPanel';
 
-export function ResultDisplay({ result }) {
+export function ResultDisplay({ result, config }) {
   try {
     if (!result) return null;
 
@@ -17,6 +18,25 @@ export function ResultDisplay({ result }) {
     console.log('Nested data:', data);
     console.log('Content:', data.content);
     console.log('Markdown:', data.markdown);
+
+    // Calculate runtime in seconds
+    const startTime = new Date(data.startTime);
+    const endTime = new Date(data.endTime);
+    const runtimeSeconds = ((endTime - startTime) / 1000).toFixed(2);
+
+    // Format configuration for display
+    const formatConfig = (config) => {
+      if (!config) return {};
+      return {
+        'Wait Time': `${config.waitFor / 1000}s`,
+        'Browser Profile': Object.entries(BROWSER_PROFILES).find(([_, ua]) => ua === config.userAgent)?.[0] || 'Custom',
+        'Remove Base64 Images': config.removeBase64Images ? 'Yes' : 'No',
+        'Only Main Content': config.onlyMainContent ? 'Yes' : 'No',
+        'Mobile Emulation': config.emulateMobile ? 'Yes' : 'No',
+        'Include Tags': config.includeTags?.length ? config.includeTags.join(', ') : 'None',
+        'Exclude Tags': config.excludeTags?.length ? config.excludeTags.join(', ') : 'None',
+      };
+    };
 
     // Detect CAPTCHA or anti-bot measures
     const hasCaptcha = data.markdown?.toLowerCase?.()?.includes('captcha') ||
@@ -65,6 +85,45 @@ export function ResultDisplay({ result }) {
         <h2 className="text-2xl font-bold text-gray-900 pb-4 border-b border-gray-200">
           Compatibility Analysis Results
         </h2>
+
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="p-4 bg-gray-50 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">
+              Analysis Details
+            </h3>
+          </div>
+          <div className="p-4 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-3 bg-gray-50 rounded">
+                <strong className="block text-sm font-medium text-gray-700 mb-1">URL:</strong>
+                <a 
+                  href={data.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 break-all"
+                >
+                  {data.url}
+                </a>
+              </div>
+              <div className="p-3 bg-gray-50 rounded">
+                <strong className="block text-sm font-medium text-gray-700 mb-1">Runtime:</strong>
+                <span className="text-gray-600">{runtimeSeconds} seconds</span>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 pt-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Configuration Settings:</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.entries(formatConfig(config)).map(([key, value]) => (
+                  <div key={key} className="p-3 bg-gray-50 rounded">
+                    <strong className="block text-sm font-medium text-gray-700 mb-1">{key}:</strong>
+                    <span className="text-gray-600">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div className="space-y-3">
           <div className={`p-3 rounded-lg text-center font-medium ${
