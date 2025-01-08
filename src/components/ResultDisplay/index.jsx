@@ -4,8 +4,14 @@ export function ResultDisplay({ result }) {
   try {
     if (!result) return null;
 
-    const { data } = result;
+    // Handle nested data structure
+    const { data: { data } } = result;
     if (!data) return null;
+
+    // For debugging
+    console.log('Nested data:', data);
+    console.log('Content:', data.content);
+    console.log('Markdown:', data.markdown);
 
     // Detect CAPTCHA or anti-bot measures
     const hasCaptcha = data.markdown?.toLowerCase?.()?.includes('captcha') ||
@@ -34,11 +40,6 @@ export function ResultDisplay({ result }) {
     const sslMessage = isSecure
       ? (hasValidSSL ? "✅ Valid SSL certificate" : "❌ Invalid SSL certificate")
       : "⚠️ No SSL (HTTP only)";
-
-    // For debugging
-    console.log('Result data:', result);
-    console.log('Content:', data.content);
-    console.log('Markdown:', data.markdown);
 
     return (
       <div className="space-y-6">
