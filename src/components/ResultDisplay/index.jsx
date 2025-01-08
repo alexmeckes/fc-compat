@@ -8,12 +8,14 @@ export function ResultDisplay({ result, config }) {
     // Handle nested data structure
     const { data } = result;
     console.log('Response data:', data);
+    console.log('Config received:', config);
 
     if (!data) return null;
 
     // For debugging
     console.log('Content:', data.content);
     console.log('Markdown:', data.markdown);
+    console.log('SSL data:', data.ssl);
 
     // Calculate runtime in seconds
     const startTime = new Date(data.startTime);
@@ -22,8 +24,12 @@ export function ResultDisplay({ result, config }) {
 
     // Format configuration for display
     const formatConfig = (config) => {
-      if (!config) return {};
-      return {
+      if (!config) {
+        console.log('No config provided to formatConfig');
+        return {};
+      }
+      console.log('Formatting config:', config);
+      const formatted = {
         'Wait Time': `${config.waitFor / 1000}s`,
         'Browser Profile': Object.entries(BROWSER_PROFILES).find(([_, ua]) => ua === config.userAgent)?.[0] || 'Custom',
         'Remove Base64 Images': config.removeBase64Images ? 'Yes' : 'No',
@@ -32,6 +38,8 @@ export function ResultDisplay({ result, config }) {
         'Include Tags': config.includeTags?.length ? config.includeTags.join(', ') : 'None',
         'Exclude Tags': config.excludeTags?.length ? config.excludeTags.join(', ') : 'None',
       };
+      console.log('Formatted config:', formatted);
+      return formatted;
     };
 
     // Detect CAPTCHA or anti-bot measures

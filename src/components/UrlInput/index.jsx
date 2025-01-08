@@ -12,8 +12,10 @@ export function UrlInput({ onResult, onError }) {
     if (!url) return;
 
     setLoading(true);
+    console.log('Submitting with config:', config);
     try {
       const result = await analyzeUrl(url, config);
+      console.log('Analysis result:', result);
       onResult(result, config);
     } catch (error) {
       onError(error.message);
@@ -22,10 +24,15 @@ export function UrlInput({ onResult, onError }) {
     }
   };
 
+  const handleConfigChange = (newConfig) => {
+    console.log('Config updated:', newConfig);
+    setConfig(newConfig);
+  };
+
   return (
     <div className="mb-8">
       <div className="relative">
-        <ConfigPanel onConfigChange={setConfig} />
+        <ConfigPanel onConfigChange={handleConfigChange} />
         
         <form onSubmit={handleSubmit} className="flex gap-3">
           <input

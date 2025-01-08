@@ -9,6 +9,8 @@ function App() {
   const [lastConfig, setLastConfig] = useState(null);
 
   const handleResult = (data, config) => {
+    console.log('App received result:', data);
+    console.log('App received config:', config);
     setError(null);
     setResult(data);
     setLastConfig(config);

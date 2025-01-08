@@ -99,7 +99,14 @@ export default async function handler(req, res) {
     );
 
     const endTime = new Date();
-    console.log('Firecrawl response:', response.data);
+    console.log('Firecrawl raw response:', response.data);
+    console.log('SSL info:', response.data.ssl);
+    console.log('Content info:', {
+      hasContent: !!response.data.content,
+      contentLength: response.data.content?.length,
+      hasMarkdown: !!response.data.markdown,
+      markdownLength: response.data.markdown?.length
+    });
 
     // Add timing information and original URL to the response
     const responseData = {
@@ -108,6 +115,8 @@ export default async function handler(req, res) {
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString()
     };
+
+    console.log('Final response data:', responseData);
 
     return res.json({ success: true, data: responseData });
   } catch (error) {
