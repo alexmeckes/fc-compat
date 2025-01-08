@@ -53,8 +53,8 @@ export default async function handler(req, res) {
     const requestConfig = {
       url: url.startsWith('http') ? url : `https://${url}`,
       formats: ['markdown', 'html'],
-      timeout: 120000, // 120 second timeout
-      waitFor: waitFor || 2000, // Use provided wait time or default to 2 seconds
+      timeout: Math.max(120000, waitFor + 60000), // At least 120 seconds or wait time + 60 seconds
+      waitFor: typeof waitFor === 'number' ? waitFor : 30000, // Use provided wait time or default to 30 seconds
       removeBase64Images: removeBase64Images !== undefined ? removeBase64Images : true,
       onlyMainContent: onlyMainContent !== undefined ? onlyMainContent : true,
     };
@@ -94,7 +94,7 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
           ...(userAgent && !emulateMobile && { 'User-Agent': userAgent }) // Only use custom user agent if not emulating mobile
         },
-        timeout: 120000 // 120 second timeout
+        timeout: Math.max(120000, waitFor + 60000) // Match the request config timeout
       }
     );
 
