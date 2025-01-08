@@ -143,10 +143,18 @@ export default async function handler(req, res) {
     console.error('Error details:', {
       message: error.message,
       code: error.code,
+      name: error.name,
+      isAxiosError: axios.isAxiosError(error),
+      isTimeout: error.code === 'ECONNABORTED',
       response: {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data
+      },
+      config: {
+        url: error.config?.url,
+        timeout: error.config?.timeout,
+        waitFor: error.config?.data?.waitFor,
       }
     });
     
@@ -154,17 +162,61 @@ export default async function handler(req, res) {
       const errorMessage = error.response?.data?.message || error.message;
       const errorStatus = error.response?.status || 500;
       
+      // Handle specific error cases
+      if (error.code === 'ECONNABORTED') {
+        return res.status(504).json({
+          success: false,
+          error: 'The request to Firecrawl timed out. This could be due to high server load or the page taking too long to load.',
+          status: 504,
+          details: {
+            timeout: error.config?.timeout,
+            waitFor: error.config?.data?.waitFor,
+            message: error.message
+          }
+        });
+      }
+
+      if (error.code === 'ECONNREFUSED') {
+        return res.status(503).json({
+          success: false,
+          error: 'Unable to connect to Firecrawl service. The service may be down or experiencing issues.',
+          status: 503,
+          details: {
+            message: error.message,
+            code: error.code
+          }
+        });
+      }
+
+      if (error.response?.status === 429) {
+        return res.status(429).json({
+          success: false,
+          error: 'Rate limit exceeded. Please try again later.',
+          status: 429,
+          details: error.response?.data
+        });
+      }
+      
       return res.status(errorStatus).json({
         success: false,
         error: `API Error: ${errorMessage}`,
         status: errorStatus,
-        details: error.response?.data
+        details: {
+          ...error.response?.data,
+          code: error.code,
+          message: error.message
+        }
       });
     }
     
     return res.status(500).json({
       success: false,
-      error: `Server Error: ${error.message}`
+      error: `Server Error: ${error.message}`,
+      details: {
+        code: error.code,
+        name: error.name,
+        message: error.message
+      }
     });
   }
 } 
