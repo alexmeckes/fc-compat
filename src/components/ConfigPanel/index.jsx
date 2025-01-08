@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 const DEFAULT_CONFIG = {
-  waitFor: 5000, // 5 seconds in milliseconds
+  waitFor: 1000, // 1 second in milliseconds
   userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   removeBase64Images: true,
   onlyMainContent: true,
@@ -133,7 +133,7 @@ export function ConfigPanel({ onConfigChange }) {
                   className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </label>
-              <p className="text-xs text-gray-500 mt-1">Default: 5 seconds. Max: 60 seconds</p>
+              <p className="text-xs text-gray-500 mt-1">Default: 1 second. Max: 60 seconds</p>
             </div>
 
             <div>

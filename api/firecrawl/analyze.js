@@ -54,7 +54,7 @@ export default async function handler(req, res) {
     // Ensure waitFor is a valid number and within bounds
     const validatedWaitFor = typeof waitFor === 'number' && !isNaN(waitFor) 
       ? Math.min(Math.max(waitFor, 1000), 60000) 
-      : 5000;
+      : 1000; // Default to 1 second
 
     console.log('Using wait time:', validatedWaitFor);
 

@@ -24,7 +24,8 @@ export function ResultDisplay({ result, config }) {
       contentType: typeof data.content,
       markdownType: typeof data.markdown,
       contentSample: data.content?.substring?.(0, 100),
-      markdownSample: data.markdown?.substring?.(0, 100)
+      markdownSample: data.markdown?.substring?.(0, 100),
+      fullData: data
     });
 
     // Calculate runtime in seconds
@@ -186,12 +187,12 @@ export function ResultDisplay({ result, config }) {
             </h3>
           </div>
           <div className="p-4">
-            {data.markdown || data.content ? (
+            {(data.content?.length > 0 || data.markdown?.length > 0) ? (
               <div>
                 <div className="prose prose-gray max-w-none whitespace-pre-wrap">
-                  {formatContent(data.markdown || data.content)}
+                  {formatContent(data.content?.length > 0 ? data.content : data.markdown)}
                 </div>
-                {(data.markdown || data.content)?.length > maxPreviewLength && (
+                {(data.content?.length > maxPreviewLength || data.markdown?.length > maxPreviewLength) && (
                   <button 
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all"
