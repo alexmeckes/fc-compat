@@ -34,7 +34,7 @@ export default async function handler(req, res) {
 
   try {
     console.log('Processing POST request');
-    const { url, waitFor, userAgent, removeBase64Images, onlyMainContent, includeTags, excludeTags } = req.body;
+    const { url, waitFor, userAgent, removeBase64Images, onlyMainContent, includeTags, excludeTags, emulateMobile } = req.body;
     
     if (!url) {
       console.log('URL missing from request body');
@@ -58,6 +58,22 @@ export default async function handler(req, res) {
       onlyMainContent: onlyMainContent !== undefined ? onlyMainContent : true,
     };
 
+    // Add mobile emulation if enabled
+    if (emulateMobile) {
+      requestConfig.device = {
+        name: 'iPhone 12',
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1',
+        viewport: {
+          width: 390,
+          height: 844,
+          deviceScaleFactor: 3,
+          isMobile: true,
+          hasTouch: true,
+          isLandscape: false
+        }
+      };
+    }
+
     // Add includeTags if provided
     if (includeTags && includeTags.length > 0) {
       requestConfig.includeTags = includeTags;
@@ -75,7 +91,7 @@ export default async function handler(req, res) {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
-          ...(userAgent && { 'User-Agent': userAgent })
+          ...(userAgent && !emulateMobile && { 'User-Agent': userAgent }) // Only use custom user agent if not emulating mobile
         },
         timeout: 120000 // 120 second timeout
       }

@@ -7,6 +7,7 @@ const DEFAULT_CONFIG = {
   onlyMainContent: true,
   includeTags: '',
   excludeTags: '',
+  emulateMobile: false,
 };
 
 const BROWSER_PROFILES = {
@@ -159,6 +160,15 @@ export function ConfigPanel({ onConfigChange }) {
                   className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
                 />
                 Only Main Content
+              </label>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={tempConfig.emulateMobile}
+                  onChange={() => handleToggleChange('emulateMobile')}
+                  className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                />
+                Emulate Mobile Device
               </label>
             </div>
 

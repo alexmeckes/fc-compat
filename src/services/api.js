@@ -13,6 +13,7 @@ export async function analyzeUrl(url, config = null) {
         onlyMainContent: config.onlyMainContent,
         includeTags: config.includeTags,
         excludeTags: config.excludeTags,
+        emulateMobile: config.emulateMobile,
       })
     }, {
       timeout: (config?.waitFor || 30000) + 5000, // Add 5 seconds to wait time for buffer
