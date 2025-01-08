@@ -1,0 +1,61 @@
+.url-input-container {
+  position: relative;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.url-form {
+  display: flex;
+  gap: 12px;
+  position: relative;
+}
+
+.url-input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.submit-button {
+  position: relative;
+  padding: 12px 24px;
+  background: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submit-button:hover {
+  background: #3182ce;
+}
+
+.submit-button:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+}
+
+.config-toggle {
+  position: absolute;
+  top: -30px;
+  right: 0;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #4a5568;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.config-toggle:hover {
+  color: #2d3748;
+  transform: rotate(45deg);
+} 

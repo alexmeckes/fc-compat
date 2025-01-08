@@ -1,0 +1,81 @@
+.config-panel {
+  position: relative;
+}
+
+.config-toggle {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px 16px;
+  color: #4a5568;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.config-toggle:hover {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.config-content {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 300px;
+  margin-top: 12px;
+  padding: 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 10;
+}
+
+.config-group {
+  margin-bottom: 16px;
+}
+
+.config-group label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #4a5568;
+  font-size: 0.9rem;
+}
+
+.config-group input,
+.config-group select {
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #2d3748;
+}
+
+.config-group input:focus,
+.config-group select:focus {
+  outline: none;
+  border-color: #4299e1;
+  box-shadow: 0 0 0 1px #4299e1;
+}
+
+.reset-btn {
+  width: 100%;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 8px 16px;
+  color: #4a5568;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reset-btn:hover {
+  background: #edf2f7;
+  border-color: #cbd5e0;
+} 

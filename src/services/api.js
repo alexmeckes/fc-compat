@@ -7,13 +7,15 @@ export async function analyzeUrl(url, config = null) {
     const response = await axios.post(`${API_URL}/firecrawl/analyze`, {
       url,
       ...(config && {
-        waitFor: config.waitFor,
-        headers: {
-          'User-Agent': config.userAgent
-        }
+        waitFor: config.waitFor || 30000, // Default 30 seconds if not specified
+        userAgent: config.userAgent,
+        removeBase64Images: config.removeBase64Images,
+        onlyMainContent: config.onlyMainContent,
+        includeTags: config.includeTags,
+        excludeTags: config.excludeTags,
       })
     }, {
-      timeout: 30000, // 30 second timeout
+      timeout: (config?.waitFor || 30000) + 5000, // Add 5 seconds to wait time for buffer
       headers: {
         'Content-Type': 'application/json'
       }
@@ -22,10 +24,10 @@ export async function analyzeUrl(url, config = null) {
     return response.data;
   } catch (error) {
     if (error.code === 'ECONNABORTED') {
-      throw new Error('Request timed out. Please try again.');
+      throw new Error('Request timed out. Please try again or increase the wait time.');
     }
     if (error.response?.status === 504) {
-      throw new Error('Server took too long to respond. Please try again.');
+      throw new Error('Server took too long to respond. Try increasing the wait time.');
     }
     if (error.response?.data?.message) {
       throw new Error(error.response.data.message);

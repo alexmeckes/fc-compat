@@ -34,7 +34,7 @@ export default async function handler(req, res) {
 
   try {
     console.log('Processing POST request');
-    const { url } = req.body;
+    const { url, waitFor, userAgent, removeBase64Images, onlyMainContent, includeTags, excludeTags } = req.body;
     
     if (!url) {
       console.log('URL missing from request body');
@@ -49,20 +49,33 @@ export default async function handler(req, res) {
 
     console.log('Making request to Firecrawl with URL:', url);
 
+    const requestConfig = {
+      url: url.startsWith('http') ? url : `https://${url}`,
+      formats: ['markdown', 'html'],
+      timeout: 120000, // 120 second timeout
+      waitFor: waitFor || 2000, // Use provided wait time or default to 2 seconds
+      removeBase64Images: removeBase64Images !== undefined ? removeBase64Images : true,
+      onlyMainContent: onlyMainContent !== undefined ? onlyMainContent : true,
+    };
+
+    // Add includeTags if provided
+    if (includeTags && includeTags.length > 0) {
+      requestConfig.includeTags = includeTags;
+    }
+
+    // Add excludeTags if provided
+    if (excludeTags && excludeTags.length > 0) {
+      requestConfig.excludeTags = excludeTags;
+    }
+
     const response = await axios.post(
       'https://api.firecrawl.dev/v1/scrape',
-      {
-        url: url.startsWith('http') ? url : `https://${url}`,
-        formats: ['markdown', 'html'],
-        onlyMainContent: true, // Only get the main content, excluding headers/footers
-        timeout: 120000, // 120 second timeout
-        waitFor: 2000, // Wait 2 seconds for dynamic content to load
-        removeBase64Images: true // Remove base64 images to reduce response size
-      },
+      requestConfig,
       {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(userAgent && { 'User-Agent': userAgent })
         },
         timeout: 120000 // 120 second timeout
       }

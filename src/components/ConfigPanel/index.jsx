@@ -3,6 +3,10 @@ import { useState, useEffect } from 'react';
 const DEFAULT_CONFIG = {
   waitFor: 30,
   userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  removeBase64Images: true,
+  onlyMainContent: true,
+  includeTags: '',
+  excludeTags: '',
 };
 
 const BROWSER_PROFILES = {
@@ -20,6 +24,7 @@ export function ConfigPanel({ onConfigChange }) {
     if (savedConfig) {
       const parsed = JSON.parse(savedConfig);
       return {
+        ...DEFAULT_CONFIG,
         ...parsed,
         waitFor: Math.min(Math.max(parsed.waitFor, 1), 60)
       };
@@ -36,15 +41,20 @@ export function ConfigPanel({ onConfigChange }) {
   const handleSave = () => {
     const validatedConfig = {
       ...tempConfig,
-      waitFor: Math.min(Math.max(tempConfig.waitFor, 1), 60)
+      waitFor: Math.min(Math.max(tempConfig.waitFor, 1), 60),
+      includeTags: tempConfig.includeTags.trim(),
+      excludeTags: tempConfig.excludeTags.trim(),
     };
     setConfig(validatedConfig);
     localStorage.setItem('firecrawlConfig', JSON.stringify(validatedConfig));
     onConfigChange({
       ...validatedConfig,
-      waitFor: validatedConfig.waitFor * 1000
+      waitFor: validatedConfig.waitFor * 1000,
+      includeTags: validatedConfig.includeTags ? validatedConfig.includeTags.split(',').map(tag => tag.trim()) : [],
+      excludeTags: validatedConfig.excludeTags ? validatedConfig.excludeTags.split(',').map(tag => tag.trim()) : [],
     });
     setHasChanges(false);
+    setIsExpanded(false);
   };
 
   const handleReset = () => {
@@ -53,8 +63,11 @@ export function ConfigPanel({ onConfigChange }) {
   };
 
   const handleWaitTimeChange = (e) => {
-    const newValue = parseInt(e.target.value, 10) || 1;
-    setTempConfig(prev => ({ ...prev, waitFor: newValue }));
+    const newValue = parseInt(e.target.value, 10);
+    setTempConfig(prev => ({ 
+      ...prev, 
+      waitFor: isNaN(newValue) ? DEFAULT_CONFIG.waitFor : newValue 
+    }));
     setHasChanges(true);
   };
 
@@ -62,6 +75,22 @@ export function ConfigPanel({ onConfigChange }) {
     setTempConfig(prev => ({
       ...prev,
       userAgent: BROWSER_PROFILES[e.target.value]
+    }));
+    setHasChanges(true);
+  };
+
+  const handleToggleChange = (field) => {
+    setTempConfig(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+    setHasChanges(true);
+  };
+
+  const handleTagsChange = (field, value) => {
+    setTempConfig(prev => ({
+      ...prev,
+      [field]: value
     }));
     setHasChanges(true);
   };
@@ -109,6 +138,53 @@ export function ConfigPanel({ onConfigChange }) {
                     </option>
                   ))}
                 </select>
+              </label>
+            </div>
+
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={tempConfig.removeBase64Images}
+                  onChange={() => handleToggleChange('removeBase64Images')}
+                  className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                />
+                Remove Base64 Images
+              </label>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={tempConfig.onlyMainContent}
+                  onChange={() => handleToggleChange('onlyMainContent')}
+                  className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                />
+                Only Main Content
+              </label>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Include Tags (comma-separated):
+                <input
+                  type="text"
+                  value={tempConfig.includeTags}
+                  onChange={(e) => handleTagsChange('includeTags', e.target.value)}
+                  placeholder="e.g., article, main, .content"
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </label>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Exclude Tags (comma-separated):
+                <input
+                  type="text"
+                  value={tempConfig.excludeTags}
+                  onChange={(e) => handleTagsChange('excludeTags', e.target.value)}
+                  placeholder="e.g., nav, footer, .ads"
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </label>
             </div>
 

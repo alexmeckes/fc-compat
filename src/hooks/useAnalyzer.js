@@ -5,14 +5,18 @@ export function useAnalyzer() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [waitTime, setWaitTime] = useState(30); // Default 30 seconds
 
-  const analyze = async (url) => {
+  const analyze = async (url, config = {}) => {
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
-      const response = await analyzeUrl(url);
+      const response = await analyzeUrl(url, {
+        ...config,
+        waitFor: waitTime * 1000 // Convert to milliseconds
+      });
       if (response.success && response.data) {
         setResult(response.data);
       } else {
@@ -25,10 +29,23 @@ export function useAnalyzer() {
     }
   };
 
+  const updateWaitTime = (newTime) => {
+    if (newTime !== waitTime) {
+      const confirmed = window.confirm(
+        `Are you sure you want to change the wait time to ${newTime} seconds? This will be used for future requests.`
+      );
+      if (confirmed) {
+        setWaitTime(newTime);
+      }
+    }
+  };
+
   return {
     result,
     error,
     loading,
-    analyze
+    analyze,
+    waitTime,
+    updateWaitTime
   };
 } 
