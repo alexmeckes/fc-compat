@@ -16,6 +16,16 @@ export function ResultDisplay({ result, config }) {
     console.log('Raw content:', data.content);
     console.log('Raw markdown:', data.markdown);
     console.log('SSL data:', data.ssl);
+    console.log('Data structure:', {
+      hasContent: !!data.content,
+      hasMarkdown: !!data.markdown,
+      contentLength: data.content?.length,
+      markdownLength: data.markdown?.length,
+      contentType: typeof data.content,
+      markdownType: typeof data.markdown,
+      contentSample: data.content?.substring?.(0, 100),
+      markdownSample: data.markdown?.substring?.(0, 100)
+    });
 
     // Calculate runtime in seconds
     const startTime = new Date(data.startTime);
@@ -176,12 +186,12 @@ export function ResultDisplay({ result, config }) {
             </h3>
           </div>
           <div className="p-4">
-            {data.markdown ? (
+            {data.markdown || data.content ? (
               <div>
                 <div className="prose prose-gray max-w-none whitespace-pre-wrap">
-                  {formatContent(data.markdown)}
+                  {formatContent(data.markdown || data.content)}
                 </div>
-                {data.markdown.length > maxPreviewLength && (
+                {(data.markdown || data.content)?.length > maxPreviewLength && (
                   <button 
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all"
